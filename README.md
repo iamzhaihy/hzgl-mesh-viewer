@@ -15,7 +15,7 @@ Before you start, make sure you have the following things:
 
 To run the program yourself, type the following commands
 ```bash
-git clone --recursive https://github.com/iamzhaihy/hzgl-obj-viewer.git
+git clone --recursive https://github.com/iamzhaihy/hzgl-mesh-viewer.git
 cd hzgl-obj-viewer
 mkdir build && cd build
 cmake ..
