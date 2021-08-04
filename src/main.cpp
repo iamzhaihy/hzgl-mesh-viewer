@@ -11,6 +11,8 @@
 
 // Helper functions
 #include "hzgl/Timer.hpp"
+#include "hzgl/Light.hpp"
+#include "hzgl/Material.hpp"
 #include "hzgl/Camera.hpp"
 #include "hzgl/Control.hpp"
 #include "hzgl/ResourceManager.hpp"
@@ -24,6 +26,8 @@ GLFWwindow* window;
 hzgl::SimpleTimer timer;
 hzgl::ImGuiControl guiControl;
 hzgl::ResourceManager resources;
+std::vector<hzgl::Light> lights;
+std::vector<hzgl::Material> materials;
 std::vector<hzgl::RenderObject> objects;
 hzgl::Camera camera(glm::vec3(0, 0, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 45.0f,
     static_cast<float>(0.75f * width) / static_cast<float>(height));
@@ -54,6 +58,12 @@ static void init(void)
     glfwGetFramebufferSize(window, &width, &height);
     framebuffer_size_callback(window, width, height);
 
+    lights.push_back(
+        hzgl::Light(hzgl::LightType::HZGL_POINT_LIGHT, camera.position, glm::vec3(1, 1, 1), glm::vec3(.1, .1, .1)));
+
+    materials.push_back(
+        hzgl::Material(hzgl::MaterialType::HZGL_PHONG_MATERIAL, glm::vec3(0.54f, 0.54f, 0.86f), glm::vec3(0.54f, 0.54f, 0.86f), glm::vec3(0.2f, 0.2f, 0.2f)));
+
     glViewport(0, 0, static_cast<int>(0.75f * width), height);
     glClearColor(0.98f, 0.98f, 0.98f, 1.0f);
 
@@ -69,12 +79,7 @@ static void display(void)
 {
     static int mIndex = 0;
     static int pIndex = 0;
-
-    static int shininess = 32;
     static float rotation = 0.0f;
-    static float lightColor[] = { 1, 1, 1 };
-    static float objectColor[] = { 0.54f, 0.54f, 0.86f };
-    static float lightPosition[] = { camera.position.x, camera.position.y, camera.position.z };
 
     deltaTime = static_cast<float>(timer.Tick());
     rotation += 10.0f * deltaTime;
@@ -87,24 +92,19 @@ static void display(void)
 
     guiControl.BeginFrame(true);
     {	
-        guiControl.RenderCameraWidget(&camera);
+        guiControl.RenderCameraWidget(camera);
 
         if (ImGui::CollapsingHeader("Assets", ImGuiTreeNodeFlags_DefaultOpen))
             guiControl.RenderListBox("Loaded Meshes", modelNames, &mIndex);
 
-        if (ImGui::CollapsingHeader("Rendering"), ImGuiTreeNodeFlags_DefaultOpen)
+        if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
         {
             guiControl.RenderListBox("Shader Programs", programNames, &pIndex);
 
             if (programNames[pIndex] == "Blinn-Phong Shading")
             {
-                ImGui::Text("Light Properties"); ImGui::Spacing();
-                ImGui::ColorEdit3("Color", lightColor);
-                ImGui::DragFloat3("Position", lightPosition, 0.01f, -10.0f, 10.0f, "%.2f");
-
-                ImGui::Text("Object Material");
-                ImGui::ColorEdit3("Albedo", objectColor);
-                ImGui::DragInt("Shininess", &shininess, 1, 2, 3200);
+                guiControl.RenderLightingConfigWidget(lights, false);
+                guiControl.RenderMaterialConfigWidget(materials, false);
             }
         }
     }
@@ -126,11 +126,9 @@ static void display(void)
 
     if (programNames[pIndex] == "Blinn-Phong Shading")
     {
+        hzgl::SetupLight(program, lights[0], "uLight");
+        hzgl::SetupMaterial(program, materials[0], "uMaterial");
         glUniform3fv(glGetUniformLocation(program, "uEyePosition"), 1, &camera.position[0]);
-        glUniform3fv(glGetUniformLocation(program, "uLightPosition"), 1, lightPosition);
-        glUniform3fv(glGetUniformLocation(program, "uLightColor"), 1, lightColor);
-        glUniform3fv(glGetUniformLocation(program, "uObjectColor"), 1, objectColor);
-        glUniform1i(glGetUniformLocation(program, "uShininess"), shininess);
     }
 
     glBindVertexArray(objects[mIndex].VAO);

@@ -5,29 +5,56 @@ in vec3 fWorldPos;
 
 out vec4 FragColor;
 
+struct LightProperties
+{
+    int isEnabled;
+    int isLocal;
+    // position/direction
+    vec3 position;
+    // colors/intensities
+    vec3 color;
+    vec3 ambient;
+    // for spot light
+    vec3 coneDirection;
+    float spotExponent;
+    float spotCosCutoff;
+    // for local lights
+    float constantAttenuation;
+    float linearAttenuation;
+    float quadraticAttenuation;
+};
+
+struct MaterialProperties
+{
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+};
+
 uniform int uShininess;
-uniform vec3 uLightPosition; 
 uniform vec3 uEyePosition; 
-uniform vec3 uLightColor;
 uniform vec3 uObjectColor;
+uniform LightProperties uLight;
+uniform MaterialProperties uMaterial;
 
 void main()
 {
     // ambient
-    float Ia = 0.1;
-    vec3 ambient = Ia * uLightColor;
+    vec3 cAmbient = uLight.isEnabled * uLight.ambient * uMaterial.ambient;
   	
     // diffuse 
     vec3 norm = normalize(fNormal);
-    vec3 lightDir = normalize(uLightPosition - fWorldPos);
-    vec3 diffuse = max(dot(norm, lightDir), 0.0) * uLightColor;
+    vec3 lightDir = normalize(uLight.position - fWorldPos);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 cDiffuse = uLight.isEnabled * uLight.color * (diff * uMaterial.diffuse);
     
     // specular
-    float Is = 0.5;
     vec3 viewDir = normalize(uEyePosition - fWorldPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    vec3 specular = Is * pow(max(dot(viewDir, reflectDir), 0.0), uShininess) * uLightColor;  
+    vec3 halfVec = normalize(lightDir + viewDir); 
+    float spec = pow(max(dot(norm, halfVec), 0.0), uMaterial.shininess);
+    vec3 cSpecular = uLight.isEnabled * uLight.color * (spec * uMaterial.specular);  
         
-    vec3 result = (ambient + diffuse + specular) * uObjectColor;
+    vec3 result = cAmbient + cDiffuse + cSpecular;
     FragColor = vec4(result, 1.0);
-} 
+}
