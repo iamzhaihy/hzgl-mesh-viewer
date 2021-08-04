@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Light.hpp"
 #include "Camera.hpp"
+#include "Material.hpp"
 #include "ResourceManager.hpp"
 
 #include <GLFW/glfw3.h>
@@ -23,7 +25,6 @@ namespace hzgl
         // render control widgets
         void helpMarker(const char* desc);
 
-
     public:
         ImGuiControl();
         ~ImGuiControl();
@@ -33,8 +34,17 @@ namespace hzgl
         void BeginFrame(bool fixed_position = true);
         void EndFrame();
 
-        void RenderCameraWidget(Camera* camera = nullptr);
+        // widget to control hzgl types
+        void RenderCameraWidget(Camera& camera);
+
+        void RenderLightWidget(Light& light);
+        void RenderLightingConfigWidget(std::vector<Light>& lights, bool collapsingHeader = false);
+
+        void RenderMaterialWidget(Material& material);
+        void RenderMaterialConfigWidget(std::vector<Material>& materials, bool collapsingHeader = false);
+
+        // wrapper around Dear ImGui
         void RenderDragMatrix3(const std::string& label, std::vector<float>& mat);
-        void RenderListBox(const std::string& label, const std::vector<std::string>& options, int* selected = nullptr); 
+        void RenderListBox(const std::string& label, const std::vector<std::string>& options, int* selected = nullptr);
     };
 } // namespace hzgl

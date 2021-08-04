@@ -37,6 +37,49 @@ static std::string hzglScreenshotStem()
     return timestamp.str();
 }
 
+static std::string hzglLightType(hzgl::LightType type)
+{
+    std::string lightType;
+
+    switch (type)
+    {
+        case hzgl::LightType::HZGL_SPOT_LIGHT:
+            lightType = "Spot light";
+            break;
+        case hzgl::LightType::HZGL_POINT_LIGHT:
+            lightType = "Point light";
+            break;
+        case hzgl::LightType::HZGL_DIRECTIONAL_LIGHT:
+            lightType = "Directional light";
+            break;
+        default:
+            lightType = "Unknown type";
+            break;
+    }
+
+    return lightType;
+}
+
+static std::string hzglMaterialType(hzgl::MaterialType type)
+{
+    std::string matType;
+
+    switch (type)
+    {
+        case hzgl::MaterialType::HZGL_PHONG_MATERIAL:
+            matType = "Phong Material";
+            break;
+        case hzgl::MaterialType::HZGL_PBR_MATERIAL:
+            matType = "PBR Material";
+            break;
+        default:
+            matType = "Unknown type";
+            break;
+    }
+
+    return matType;
+}
+
 void hzgl::TakeScreenshot(int x, int y, int w, int h)
 {
     glReadBuffer(GL_FRONT);
@@ -180,11 +223,124 @@ void hzgl::ImGuiControl::EndFrame()
     }
 }
 
-void hzgl::ImGuiControl::RenderCameraWidget(Camera *camera)
+void hzgl::ImGuiControl::RenderLightWidget(Light& light) 
 {
-    if (camera == nullptr)
+    std::string btnText = light.isEnabled ? "Disable" : "Enable";
+    btnText += " this light";
+
+    // light position / direction
+    if (light.type == HZGL_DIRECTIONAL_LIGHT)
+        ImGui::Text("%s", "Direction");
+    else
+        ImGui::Text("%s", "Position");
+
+    ImGui::DragFloat3("###light-position-drag3", &light.position[0], 0.01f);
+
+    // light intensities
+    ImGui::Text("%s", "Color/Intensities");
+    ImGui::ColorEdit3("color", &light.color[0]); ImGui::SameLine(); 
+    helpMarker("the diffuse and specular components are usually the same");
+    ImGui::ColorEdit3("ambient", &light.ambient[0]);
+
+    if (light.type == HZGL_SPOT_LIGHT)
+    {
+        ImGui::Text("%s", "Cone (Spot light only)");
+
+        ImGui::Text("%s", "Direction");
+        ImGui::DragFloat3("###light-cone-dir-drag3", &light.coneDirection[0], 0.01f);
+
+        ImGui::Text("%s", "Exponent");
+        ImGui::DragFloat("###light-cone-exp", &light.spotExponent, 0.1f);
+
+        ImGui::Text("%s", "Cosine Cutoff");
+        ImGui::DragFloat("###light-cone-cos-cutoff", &light.spotCosCutoff, 0.01f, 0.0f, 1.0f);
+    }
+    else {
+        // TODO: Handle attenuation in shader
+        // ImGui::Text("%s", "Attenuation Factors");
+        // ImGui::DragFloat("constant", &light.constantAttenuation, 0.01f);
+        // ImGui::DragFloat("linear", &light.linearAttenuation, 0.01f);
+        // ImGui::DragFloat("quadratic", &light.quadraticAttenuation, 0.01f);
+    }
+
+    if (ImGui::Button(btnText.c_str(), ImVec2(-1, 0)))
+        light.isEnabled = !light.isEnabled;
+}
+
+void hzgl::ImGuiControl::RenderLightingConfigWidget(std::vector<Light>& lights, bool collapsingHeader)
+{
+    if (lights.empty())
         return;
 
+    int lIndex = 0;
+
+    std::vector<std::string> lightNames;
+    for (int i = 0; i < lights.size(); i++) 
+    {
+        std::string lName = "#" + std::to_string(i+1) + ": " + hzglLightType(lights[i].type);
+        lightNames.push_back(lName);
+    }
+
+    ImGuiTreeNodeFlags flags = 0;
+    flags |= ImGuiTreeNodeFlags_DefaultOpen;
+
+    if (collapsingHeader)
+        flags |= ImGuiTreeNodeFlags_CollapsingHeader;
+
+    if (ImGui::TreeNodeEx("Lighting Properties", flags))
+    {
+        if (lightNames.size() > 1)
+            RenderListBox("", lightNames, &lIndex);
+
+        RenderLightWidget(lights[lIndex]);
+
+        if (!collapsingHeader)
+            ImGui::TreePop();
+    }
+} 
+
+void hzgl::ImGuiControl::RenderMaterialWidget(Material& material)
+{
+    ImGui::ColorEdit3("ambient", &material.ambient[0]);
+    ImGui::ColorEdit3("diffuse", &material.diffuse[0]);
+    ImGui::ColorEdit3("specular", &material.specular[0]);
+    ImGui::DragFloat("shininess", &material.shininess, 0.1f);
+}
+
+void hzgl::ImGuiControl::RenderMaterialConfigWidget(std::vector<Material>& materials, bool collapsingHeader)
+{
+    if (materials.empty())
+        return;
+
+    int mIndex = 0;
+
+    std::vector<std::string> materialNames;
+    for (int i = 0; i < materials.size(); i++) 
+    {
+        std::string mName = "#" + std::to_string(i+1) + ": " + hzglMaterialType(materials[i].type);
+        materialNames.push_back(mName);
+    }
+
+    ImGuiTreeNodeFlags flags = 0;
+    flags |= ImGuiTreeNodeFlags_DefaultOpen;
+
+    if (collapsingHeader)
+        flags |= ImGuiTreeNodeFlags_CollapsingHeader;
+
+    if (ImGui::TreeNodeEx("Material Properties", flags))
+    {
+        if (materialNames.size() > 1)
+            RenderListBox("", materialNames, &mIndex);
+
+        RenderMaterialWidget(materials[mIndex]);
+
+        if (!collapsingHeader)
+            ImGui::TreePop();
+    }
+}
+
+void hzgl::ImGuiControl::RenderCameraWidget(Camera& camera)
+{
     ImGuiTreeNodeFlags flags = 0;
     flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
@@ -196,7 +352,7 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera *camera)
         helpMarker("\"eye\" for glm::lookAt()");
 
         ImGui::SetNextItemWidth(-1);
-        ImGui::DragFloat3("##position-dragf3", &camera->position[0], 0.01f, 0.0f, 0.0f, "%.2f");
+        ImGui::DragFloat3("##position-dragf3", &camera.position[0], 0.01f, 0.0f, 0.0f, "%.2f");
         ImGui::Spacing();
 
         // set camera target ("center" for glm::lookAt())
@@ -205,7 +361,7 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera *camera)
         helpMarker("\"center\" for glm::lookAt()");
 
         ImGui::SetNextItemWidth(-1);
-        ImGui::DragFloat3("##target-dragf3", &camera->target[0], 0.01f, 0.0f, 0.0f, "%.2f");
+        ImGui::DragFloat3("##target-dragf3", &camera.target[0], 0.01f, 0.0f, 0.0f, "%.2f");
         ImGui::Spacing();
 
         // set camera vertical FoV
@@ -214,15 +370,15 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera *camera)
         helpMarker("[0, 180] degrees");
 
         ImGui::SetNextItemWidth(-1);
-        ImGui::DragFloat("##vfov-dragf", &camera->vfov, 0.01f, 0.0f, 180.0f, "%.2f");
+        ImGui::DragFloat("##vfov-dragf", &camera.vfov, 0.01f, 0.0f, 180.0f, "%.2f");
         ImGui::Spacing();
 
         // a button to reset camera properties
         if (ImGui::Button("Reset Camera Properties", ImVec2(-1, 0)))
         {
-            camera->position = glm::vec3(0, 0, 3);
-            camera->target = glm::vec3(0, 0, 0);
-            camera->vfov = 45.0f;
+            camera.position = glm::vec3(0, 0, 3);
+            camera.target = glm::vec3(0, 0, 0);
+            camera.vfov = 45.0f;
         }
 
         ImGui::Spacing();
@@ -248,15 +404,16 @@ void hzgl::ImGuiControl::RenderDragMatrix3(const std::string& label, std::vector
 
 void hzgl::ImGuiControl::RenderListBox(const std::string &label, const std::vector<std::string> &options, int *selected)
 {
-    if (label.empty() || options.empty())
+    if (options.empty())
         return;
 
     std::string identifier = "##" + label + "-listbox";
     float listBoxHeight = ImGui::GetTextLineHeightWithSpacing() * (options.size() + 2);
 
-    ImGui::Text("%s", label.c_str());
+    if (!label.empty())
+        ImGui::Text("%s", label.c_str());
+    
     ImGui::SetNextItemWidth(-1);
-
     if (ImGui::BeginListBox(identifier.c_str(), ImVec2(0, listBoxHeight)))
     {
         for (int i = 0; i < options.size(); i++)
