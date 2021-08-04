@@ -8,7 +8,7 @@ namespace hzgl
     std::string GetParentPath(const std::string& filepath);
     std::string GetAbsolutePath(const std::string& relpath);
 
-    bool CopyFile(const std::string& src, const std::string& dest, bool failIfExists = true);
-    bool MoveFile(const std::string& src, const std::string& dest, bool failIfExists = true);
-    bool DeleteFile(const std::string& fileName);
+    bool Copy(const std::string& src, const std::string& dest, bool failIfExists = true);
+    bool Move(const std::string& src, const std::string& dest, bool failIfExists = true);
+    bool Delete(const std::string& fileName);
 } // namespace hzgl
