@@ -150,37 +150,40 @@ void hzgl::ResourceManager::LoadMesh(const std::string &filepath, std::vector<Re
         NumAttribs
     };
 
-    if (_renderObjectInfo.find(filepath) != _renderObjectInfo.end())
+    if (_renderObjects.find(filepath) != _renderObjects.end())
         return;
 
-    std::vector<MeshInfo> meshes;
+    std::vector<ShapeInfo> shapes;
 
-    LoadOBJ(filepath, meshes);
+    LoadOBJ(filepath, shapes);
 
-    for (const auto &mesh : meshes)
+    RenderObject renderObject;
+    for (const auto &shape : shapes)
     {
-        RenderObject renderObj;
-        renderObj.name = mesh.name;
-        renderObj.num_vertices = mesh.num_vertices;
-        renderObj.shading_mode = mesh.shading_mode;
+        RenderShape renderShape;
+        renderShape.name = shape.name;
+        renderShape.num_vertices = shape.num_vertices;
+        renderShape.shading_mode = shape.shading_mode;
+        renderShape.has_normals = shape.normals.size() > 0;
+        renderShape.has_texcoords = shape.texcoords.size() > 0;
 
         GLuint Buffers[NumBuffers] = {};
 
         // generate buffers
-        glGenVertexArrays(1, &renderObj.VAO);
+        glGenVertexArrays(1, &renderShape.VAO);
         glGenBuffers(NumBuffers, &Buffers[0]);
 
-        glBindVertexArray(renderObj.VAO);
+        glBindVertexArray(renderShape.VAO);
 
         // feed data to the GPU
         glBindBuffer(GL_ARRAY_BUFFER, Buffers[Position]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * mesh.positions.size(), mesh.positions.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * shape.positions.size(), shape.positions.data(), GL_STATIC_DRAW);
 
         glBindBuffer(GL_ARRAY_BUFFER, Buffers[Normal]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * mesh.normals.size(), mesh.normals.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * shape.normals.size(), shape.normals.data(), GL_STATIC_DRAW);
 
         glBindBuffer(GL_ARRAY_BUFFER, Buffers[TexCoord]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * mesh.texcoords.size(), mesh.texcoords.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * shape.texcoords.size(), shape.texcoords.data(), GL_STATIC_DRAW);
 
         // VBO plumbing (assume the layout to be fixed)
         glBindBuffer(GL_ARRAY_BUFFER, Buffers[Position]);
@@ -198,34 +201,37 @@ void hzgl::ResourceManager::LoadMesh(const std::string &filepath, std::vector<Re
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        for (const auto &pair : mesh.texpath)
+        for (const auto &pair : shape.texpath)
         {
             const auto &type = pair.first;
             const auto &path = pair.second;
 
             // load each texture image and convert it to OpenGL handle
             if (!path.empty())
-                renderObj.texture[type] = LoadTexture(path, GL_TEXTURE_2D);
+                renderShape.texture[type] = LoadTexture(path, GL_TEXTURE_2D);
             else
-                renderObj.texture[type] = 0;
+                renderShape.texture[type] = 0;
+
+            if (renderShape.texture[type] > 0)
+                renderShape.has_textures = true;
         }
 
         // keep track of the OpenGL handles used
-        _usedVAOs.push_back(renderObj.VAO);
+        _usedVAOs.push_back(renderShape.VAO);
 
         for (int i = 0; i < NumBuffers; i++)
             _usedVBOs.push_back(Buffers[i]);
 
-        objects.push_back(renderObj);
+        renderObject.shapes.push_back(renderShape);
     }
 
-    RenderObjectInfo renderObjInfo;
-    renderObjInfo.filepath = filepath;
-    renderObjInfo.start_index = static_cast<int>(_loadedMeshes.size());
-    renderObjInfo.num_meshes = static_cast<int>(meshes.size());
+    renderObject.path = filepath;
+    renderObject.num_shapes = renderObject.shapes.size();
+
+    objects.push_back(renderObject);
 
     _loadedMeshes.push_back(filepath);
-    _renderObjectInfo[filepath] = renderObjInfo;
+    _renderObjects[filepath] = renderObject;
 }
 
 std::vector<std::string> hzgl::ResourceManager::GetLoadedMeshesNames()

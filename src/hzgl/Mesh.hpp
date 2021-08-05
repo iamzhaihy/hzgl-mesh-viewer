@@ -28,7 +28,7 @@ namespace hzgl
         // Material
         ShadingMode shading_mode;
         std::unordered_map<std::string, std::string> texpath;
-    } MeshInfo;
+    } ShapeInfo;
 
-    void LoadOBJ(const std::string& filepath, std::vector<MeshInfo>& meshes);
+    void LoadOBJ(const std::string& filepath, std::vector<ShapeInfo>& meshes);
 } // namespace hzgl

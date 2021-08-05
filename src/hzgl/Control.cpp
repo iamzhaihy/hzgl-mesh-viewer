@@ -80,6 +80,32 @@ static std::string hzglMaterialType(hzgl::MaterialType type)
     return matType;
 }
 
+static std::string hzglShadingMode(hzgl::ShadingMode mode)
+{
+    std::string shadingMode;
+
+    switch (mode)
+    {
+        case hzgl::ShadingMode::HZGL_FLAT :
+            shadingMode = "Flat Shading";
+            break;
+        case hzgl::ShadingMode::HZGL_PHONG :
+            shadingMode = "Phong Shading";
+            break;
+        case hzgl::ShadingMode::HZGL_NORMAL_MAPPING:
+            shadingMode = "Normal Mapping";
+            break;
+        case hzgl::ShadingMode::HZGL_PBR:
+            shadingMode = "Physically Based Rendering";
+            break;
+        default:
+            shadingMode = "Unknown type";
+            break;
+    }
+
+    return shadingMode;
+}
+
 void hzgl::TakeScreenshot(int x, int y, int w, int h)
 {
     glReadBuffer(GL_FRONT);
@@ -383,6 +409,46 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera& camera)
 
         ImGui::Spacing();
     }
+}
+
+void hzgl::ImGuiControl::RenderMeshInfoWidget(const RenderObject& robj)
+{
+    for (int i = 0; i < robj.num_shapes; i++)
+    {
+        const auto& rshape = robj.shapes[i];
+        std::string label = "Shape " + std::to_string(i+1)
+                          + ": " + rshape.name;
+
+        if (ImGui::TreeNodeEx(label.c_str()))
+        {
+            ImGui::Text("OpenGL VAO: %u", rshape.VAO);
+
+            if (ImGui::TreeNodeEx("Geometry"))
+            {
+                ImGui::Text("Number of vertices: %d", rshape.num_vertices);
+                ImGui::Text("Surface normals: %s", rshape.has_normals ? "Yes" : "No");
+                ImGui::Text("Texture coordinates: %s", rshape.has_texcoords ? "Yes" : "No");
+                ImGui::TreePop();
+            }
+
+            if (rshape.has_textures && ImGui::TreeNodeEx("Textures"))
+            {
+                std::cout << "Hello\n";
+                for (const auto & pair : rshape.texture)
+                {
+                    if (pair.second == 0)
+                        continue;
+
+                    ImGui::Text("%s: %u", pair.first.c_str(), pair.second);
+                }
+                ImGui::TreePop();
+            }
+
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::Spacing();
 }
 
 void hzgl::ImGuiControl::RenderDragMatrix3(const std::string& label, std::vector<float>& mat)

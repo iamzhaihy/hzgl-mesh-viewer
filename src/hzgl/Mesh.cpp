@@ -29,7 +29,7 @@ static bool hzglHasSmoothingGroup(const tinyobj::shape_t& shape)
     return false;
 }
 
-void hzgl::LoadOBJ(const std::string& filepath, std::vector<MeshInfo>& meshes)
+void hzgl::LoadOBJ(const std::string& filepath, std::vector<ShapeInfo>& loadedShapes)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -59,40 +59,40 @@ void hzgl::LoadOBJ(const std::string& filepath, std::vector<MeshInfo>& meshes)
         if (vCount <= 0)
             continue;
 
-        MeshInfo meshInfo;
-        meshInfo.name = shape.name;
-        meshInfo.num_vertices = int(vCount);
-        meshInfo.positions.resize(vCount * 3, 0);
-        meshInfo.normals.resize(vCount * 3, 0);
-        meshInfo.texcoords.resize(vCount * 2, 0);
+        ShapeInfo shapeInfo;
+        shapeInfo.name = shape.name;
+        shapeInfo.num_vertices = int(vCount);
+        shapeInfo.positions.resize(vCount * 3, 0);
+        shapeInfo.normals.resize(vCount * 3, 0);
+        shapeInfo.texcoords.resize(vCount * 2, 0);
 
-        for (int i = 0; i < meshInfo.num_vertices; i++)
+        for (int i = 0; i < shapeInfo.num_vertices; i++)
         {
             const auto& idx = shape.mesh.indices[i];
 
             if (idx.vertex_index >= 0)
             {
-                meshInfo.positions[i * 3 + 0] = attrib.vertices[idx.vertex_index * 3 + 0];
-                meshInfo.positions[i * 3 + 1] = attrib.vertices[idx.vertex_index * 3 + 1];
-                meshInfo.positions[i * 3 + 2] = attrib.vertices[idx.vertex_index * 3 + 2];
+                shapeInfo.positions[i * 3 + 0] = attrib.vertices[idx.vertex_index * 3 + 0];
+                shapeInfo.positions[i * 3 + 1] = attrib.vertices[idx.vertex_index * 3 + 1];
+                shapeInfo.positions[i * 3 + 2] = attrib.vertices[idx.vertex_index * 3 + 2];
             }
 
             if (idx.normal_index >= 0)
             {
-                meshInfo.normals[i * 3 + 0] = attrib.normals[idx.normal_index * 3 + 0];
-                meshInfo.normals[i * 3 + 1] = attrib.normals[idx.normal_index * 3 + 1];
-                meshInfo.normals[i * 3 + 2] = attrib.normals[idx.normal_index * 3 + 2];
+                shapeInfo.normals[i * 3 + 0] = attrib.normals[idx.normal_index * 3 + 0];
+                shapeInfo.normals[i * 3 + 1] = attrib.normals[idx.normal_index * 3 + 1];
+                shapeInfo.normals[i * 3 + 2] = attrib.normals[idx.normal_index * 3 + 2];
             }
 
             if (idx.texcoord_index >= 0)
             {
-                meshInfo.texcoords[i * 2 + 0] = attrib.texcoords[idx.texcoord_index * 2 + 0];
-                meshInfo.texcoords[i * 2 + 1] = attrib.texcoords[idx.texcoord_index * 2 + 1];
+                shapeInfo.texcoords[i * 2 + 0] = attrib.texcoords[idx.texcoord_index * 2 + 0];
+                shapeInfo.texcoords[i * 2 + 1] = attrib.texcoords[idx.texcoord_index * 2 + 1];
             }
         }
 
         // TEMP: use normal mapping by default
-        meshInfo.shading_mode = HZGL_NORMAL_MAPPING;
+        shapeInfo.shading_mode = HZGL_NORMAL_MAPPING;
 
         // Do nothing if no valid material available
         if (!shape.mesh.material_ids.empty() && !materials.empty())
@@ -106,21 +106,21 @@ void hzgl::LoadOBJ(const std::string& filepath, std::vector<MeshInfo>& meshes)
 
             const auto& mat = materials[matID];
 
-            meshInfo.texpath["albedo"] = hzglTexturePath(parentpath, mat.diffuse_texname);
-            meshInfo.texpath["ambient"] = hzglTexturePath(parentpath, mat.ambient_texname);
-            meshInfo.texpath["specular"] = hzglTexturePath(parentpath, mat.specular_texname);
+            shapeInfo.texpath["albedo"] = hzglTexturePath(parentpath, mat.diffuse_texname);
+            shapeInfo.texpath["ambient"] = hzglTexturePath(parentpath, mat.ambient_texname);
+            shapeInfo.texpath["specular"] = hzglTexturePath(parentpath, mat.specular_texname);
 
-            meshInfo.texpath["normal"] = hzglTexturePath(parentpath, mat.normal_texname);
-            meshInfo.texpath["bump"] = hzglTexturePath(parentpath, mat.bump_texname);
-            meshInfo.texpath["displacement"] = hzglTexturePath(parentpath, mat.displacement_texname);
+            shapeInfo.texpath["normal"] = hzglTexturePath(parentpath, mat.normal_texname);
+            shapeInfo.texpath["bump"] = hzglTexturePath(parentpath, mat.bump_texname);
+            shapeInfo.texpath["displacement"] = hzglTexturePath(parentpath, mat.displacement_texname);
 
-            meshInfo.texpath["roughness"] = hzglTexturePath(parentpath, mat.roughness_texname);
-            meshInfo.texpath["metallic"] = hzglTexturePath(parentpath, mat.metallic_texname);
-            meshInfo.texpath["sheen"] = hzglTexturePath(parentpath, mat.sheen_texname);
-            meshInfo.texpath["emissive"] = hzglTexturePath(parentpath, mat.emissive_texname);
+            shapeInfo.texpath["roughness"] = hzglTexturePath(parentpath, mat.roughness_texname);
+            shapeInfo.texpath["metallic"] = hzglTexturePath(parentpath, mat.metallic_texname);
+            shapeInfo.texpath["sheen"] = hzglTexturePath(parentpath, mat.sheen_texname);
+            shapeInfo.texpath["emissive"] = hzglTexturePath(parentpath, mat.emissive_texname);
 
-            meshInfo.texpath["specular_highlight"] = hzglTexturePath(parentpath, mat.specular_highlight_texname);
-            meshInfo.texpath["reflection"] = hzglTexturePath(parentpath, mat.reflection_texname);
+            shapeInfo.texpath["specular_highlight"] = hzglTexturePath(parentpath, mat.specular_highlight_texname);
+            shapeInfo.texpath["reflection"] = hzglTexturePath(parentpath, mat.reflection_texname);
 
             // TODO:
             //   - alpha
@@ -131,6 +131,6 @@ void hzgl::LoadOBJ(const std::string& filepath, std::vector<MeshInfo>& meshes)
             //   - clearcoat_*
         }
 
-        meshes.push_back(meshInfo);
+        loadedShapes.push_back(shapeInfo);
     }
 }

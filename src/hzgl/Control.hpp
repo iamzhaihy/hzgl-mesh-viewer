@@ -37,6 +37,8 @@ namespace hzgl
         // widget to control hzgl types
         void RenderCameraWidget(Camera& camera);
 
+        void RenderMeshInfoWidget(const RenderObject& robj);
+
         void RenderLightWidget(Light& light);
         void RenderLightingConfigWidget(std::vector<Light>& lights, bool collapsingHeader = false);
 

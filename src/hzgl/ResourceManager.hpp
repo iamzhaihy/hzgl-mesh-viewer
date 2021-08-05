@@ -11,38 +11,43 @@
 
 namespace hzgl
 {
-    typedef struct
+    typedef struct _RenderShape
     {
         // Metadata
         std::string name;
-        int num_vertices;
+        int num_vertices = 0;
+        bool has_normals = false;
+        bool has_texcoords = false;
+        bool has_textures = false;
 
         // OpenGL related
-        GLuint VAO;
+        GLuint VAO = 0;
         ShadingMode shading_mode;
         std::unordered_map<std::string, GLuint> texture;
+    } RenderShape;
+
+    typedef struct _RenderObject
+    {
+        // Metadata
+        std::string path = "";
+        int num_shapes = 0;
+
+        std::vector<RenderShape> shapes;
     } RenderObject;
 
-    typedef struct
+    typedef struct _ShaderInfo
     {
-        GLuint id;
-        std::string filepath;
+        GLuint id = 0;
+        std::string filepath = "";
     } ShaderInfo;
 
-    typedef struct 
+    typedef struct _ProgramInfo
     {
-        GLuint id;
-        std::string name;
+        GLuint id = 0;
+        std::string name = "";
         std::vector<ShaderStage> stages;
         // TODO: a list of uniform variables
     } ProgramInfo;
-
-    typedef struct
-    {
-        int start_index;
-        int num_meshes;
-        std::string filepath;
-    } RenderObjectInfo;
 
     class ResourceManager
     {
@@ -57,7 +62,7 @@ namespace hzgl
         std::unordered_map<std::string, ShaderInfo> _shaderInfo;
         std::unordered_map<std::string, ProgramInfo> _programInfo;
         std::unordered_map<std::string, TextureInfo> _textureInfo;
-        std::unordered_map<std::string, RenderObjectInfo> _renderObjectInfo;
+        std::unordered_map<std::string, RenderObject> _renderObjects;
 
     public:
         ResourceManager();
