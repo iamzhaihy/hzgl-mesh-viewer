@@ -254,13 +254,15 @@ void hzgl::ImGuiControl::RenderLightWidget(Light& light)
     std::string btnText = light.isEnabled ? "Disable" : "Enable";
     btnText += " this light";
 
+    std::string labelText;
     // light position / direction
     if (light.type == HZGL_DIRECTIONAL_LIGHT)
-        ImGui::Text("%s", "Direction");
+        labelText = "direction";
     else
-        ImGui::Text("%s", "Position");
+        labelText = "position";
 
-    ImGui::DragFloat3("###light-position-drag3", &light.position[0], 0.01f);
+    labelText += "##light-position-drag3";
+    ImGui::DragFloat3(labelText.c_str(), &light.position[0], 0.01f);
 
     // light intensities
     ImGui::Text("%s", "Color/Intensities");
@@ -289,6 +291,7 @@ void hzgl::ImGuiControl::RenderLightWidget(Light& light)
         // ImGui::DragFloat("quadratic", &light.quadraticAttenuation, 0.01f);
     }
 
+    ImGui::Spacing();
     if (ImGui::Button(btnText.c_str(), ImVec2(-1, 0)))
         light.isEnabled = !light.isEnabled;
 }
@@ -327,10 +330,13 @@ void hzgl::ImGuiControl::RenderLightingConfigWidget(std::vector<Light>& lights, 
 
 void hzgl::ImGuiControl::RenderMaterialWidget(Material& material)
 {
-    ImGui::ColorEdit3("ambient", &material.ambient[0]);
-    ImGui::ColorEdit3("diffuse", &material.diffuse[0]);
-    ImGui::ColorEdit3("specular", &material.specular[0]);
-    ImGui::DragFloat("shininess", &material.shininess, 0.1f);
+    if (material.type == MaterialType::HZGL_PHONG_MATERIAL)
+    {
+        ImGui::ColorEdit3("ambient", &material.ambient[0]);
+        ImGui::ColorEdit3("diffuse", &material.diffuse[0]);
+        ImGui::ColorEdit3("specular", &material.specular[0]);
+        ImGui::DragFloat("shininess", &material.shininess, 0.1f, 2.0f, 3200.0f, "%.1f");
+    }
 }
 
 void hzgl::ImGuiControl::RenderMaterialConfigWidget(std::vector<Material>& materials, bool collapsingHeader)

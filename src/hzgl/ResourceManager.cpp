@@ -51,6 +51,8 @@ GLuint hzgl::ResourceManager::LoadShader(const std::string &filepath, GLenum sha
     if (_shaderInfo.find(filepath) != _shaderInfo.end())
         return _shaderInfo[filepath].id;
 
+    std::cout << "Loading shader from " << filepath << std::endl;
+
     if (!Exists(filepath))
     {
         HZGL_LOG_ERROR("File does not exist.")
@@ -117,6 +119,8 @@ GLuint hzgl::ResourceManager::LoadTexture(const std::string &filepath, GLenum ty
     if (_textureInfo.find(filepath) != _textureInfo.end())
         return _textureInfo[filepath].id;
 
+    std::cout << "Loading texture from " << filepath << std::endl;
+
     if (!Exists(filepath))
     {
         HZGL_LOG_ERROR("File does not exist.")
@@ -152,6 +156,8 @@ void hzgl::ResourceManager::LoadMesh(const std::string &filepath, std::vector<Re
 
     if (_renderObjects.find(filepath) != _renderObjects.end())
         return;
+
+    std::cout << "Loading mesh from " << filepath << std::endl;
 
     std::vector<ShapeInfo> shapes;
 
