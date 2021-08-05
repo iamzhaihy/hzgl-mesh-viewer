@@ -41,6 +41,7 @@ static void init(void)
     resources.LoadMesh("../assets/models/bunny.obj", objects);
     resources.LoadMesh("../assets/models/buddha.obj", objects);
     resources.LoadMesh("../assets/models/dragon.obj", objects);
+    resources.LoadMesh("../assets/models/mori_knob/testObj.obj", objects);
 
     // prepare the shader programs
     resources.LoadShaderProgram({
@@ -94,8 +95,11 @@ static void display(void)
     {	
         guiControl.RenderCameraWidget(camera);
 
-        if (ImGui::CollapsingHeader("Assets", ImGuiTreeNodeFlags_DefaultOpen))
+        if (ImGui::CollapsingHeader("Assets", ImGuiTreeNodeFlags_DefaultOpen)) 
+        {
             guiControl.RenderListBox("Loaded Meshes", modelNames, &mIndex);
+            guiControl.RenderMeshInfoWidget(objects[mIndex]);
+        }
 
         if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
         {
@@ -131,8 +135,12 @@ static void display(void)
         glUniform3fv(glGetUniformLocation(program, "uEyePosition"), 1, &camera.position[0]);
     }
 
-    glBindVertexArray(objects[mIndex].VAO);
-    glDrawArrays(GL_TRIANGLES, 0, objects[mIndex].num_vertices);
+    for (int i = 0; i < objects[mIndex].num_shapes; i++)
+    {
+        const auto& shape = objects[mIndex].shapes[i];
+        glBindVertexArray(shape.VAO);
+        glDrawArrays(GL_TRIANGLES, 0, shape.num_vertices);
+    }
 
     glBindVertexArray(0);
     glUseProgram(0);
