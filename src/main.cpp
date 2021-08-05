@@ -17,8 +17,8 @@
 #include "hzgl/Control.hpp"
 #include "hzgl/ResourceManager.hpp"
 
-static int width = 1280;
-static int height = 720;
+static int SCR_WIDTH = 1280;
+static int SCR_HEIGHT = 720;
 static float deltaTime = 0.0f;
 
 GLFWwindow* window;
@@ -30,7 +30,7 @@ std::vector<hzgl::Light> lights;
 std::vector<hzgl::Material> materials;
 std::vector<hzgl::RenderObject> objects;
 hzgl::Camera camera(glm::vec3(0, 0, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 45.0f,
-    static_cast<float>(0.75f * width) / static_cast<float>(height));
+    static_cast<float>(0.75f * SCR_WIDTH) / static_cast<float>(SCR_HEIGHT));
 
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -61,6 +61,7 @@ static void init(void)
 
     guiControl.Init(window, "#version 410");
 
+    int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     framebuffer_size_callback(window, width, height);
 
@@ -70,7 +71,6 @@ static void init(void)
     materials.push_back(hzgl::Material(hzgl::MaterialType::HZGL_PHONG_MATERIAL));
     materials.push_back(hzgl::Material(hzgl::MaterialType::HZGL_PBR_MATERIAL));
 
-    glViewport(0, 0, static_cast<int>(0.75f * width), height);
     glClearColor(0.98f, 0.98f, 0.98f, 1.0f);
 
     // enable optional functionalities
@@ -96,6 +96,7 @@ static void display(void)
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
     guiControl.BeginFrame(true);
     {	
         guiControl.RenderCameraWidget(camera);
@@ -161,6 +162,7 @@ static void display(void)
         glUniform3fv(glGetUniformLocation(program, "uEyePosition"), 1, &camera.position[0]);
     }
 
+    glViewport(0, 0, static_cast<int>(0.75f * SCR_WIDTH), SCR_HEIGHT);
     for (int i = 0; i < objects[mIndex].num_shapes; i++)
     {
         const auto& shape = objects[mIndex].shapes[i];
@@ -191,7 +193,7 @@ int main(void)
     glfwWindowHint(GLFW_SAMPLES, 8);
 
     // create a windowed mode window and its OpenGL context
-    window = glfwCreateWindow(width, height, "OBJ Viewer", NULL, NULL);
+    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OBJ Viewer", NULL, NULL);
     if (!window)
     {
         std::cerr << "Failed to create window." << std::endl;
@@ -240,8 +242,11 @@ static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    glViewport(0, 0, static_cast<int>(0.75f * width), height);
-    camera.aspect_ratio = static_cast<float>(0.75f * width) / static_cast<float>(height);
+    SCR_WIDTH = width;
+    SCR_HEIGHT = height;
+
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+    camera.aspect_ratio = static_cast<float>(0.75f * SCR_WIDTH) / static_cast<float>(SCR_HEIGHT);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
