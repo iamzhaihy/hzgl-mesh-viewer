@@ -291,9 +291,9 @@ void hzgl::ImGuiControl::RenderLightWidget(Light& light)
         // ImGui::DragFloat("quadratic", &light.quadraticAttenuation, 0.01f);
     }
 
-    ImGui::Spacing();
-    if (ImGui::Button(btnText.c_str(), ImVec2(-1, 0)))
-        light.isEnabled = !light.isEnabled;
+    // ImGui::Spacing();
+    // if (ImGui::Button(btnText.c_str(), ImVec2(-1, 0)))
+    //     light.isEnabled = !light.isEnabled;
 }
 
 void hzgl::ImGuiControl::RenderLightingConfigWidget(std::vector<Light>& lights, bool collapsingHeader)
@@ -336,6 +336,13 @@ void hzgl::ImGuiControl::RenderMaterialWidget(Material& material)
         ImGui::ColorEdit3("diffuse", &material.diffuse[0]);
         ImGui::ColorEdit3("specular", &material.specular[0]);
         ImGui::DragFloat("shininess", &material.shininess, 0.1f, 2.0f, 3200.0f, "%.1f");
+    }
+    else if (material.type == MaterialType::HZGL_PBR_MATERIAL)
+    {
+        ImGui::ColorEdit3("albedo", &material.albedo[0]);
+        ImGui::DragFloat("metallic", &material.metallic, 0.01f, 0.0f, 1.0f, "%.2f");
+        ImGui::DragFloat("roughness", &material.roughness, 0.01f, 0.0f, 1.0f, "%.2f");
+        ImGui::DragFloat("ao", &material.ao, 0.01f, 0.0f, 1.0f, "%.2f");
     }
 }
 
