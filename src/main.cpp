@@ -54,16 +54,21 @@ static void init(void)
         {GL_FRAGMENT_SHADER, "../assets/shaders/phong.frag"},
         }, "Blinn-Phong Shading");
 
+    resources.LoadShaderProgram({
+        {GL_VERTEX_SHADER, "../assets/shaders/pbr_basic.vert"},
+        {GL_FRAGMENT_SHADER, "../assets/shaders/pbr_basic.frag"},
+        }, "PBR Basic");
+
     guiControl.Init(window, "#version 410");
 
     glfwGetFramebufferSize(window, &width, &height);
     framebuffer_size_callback(window, width, height);
 
     lights.push_back(
-        hzgl::Light(hzgl::LightType::HZGL_POINT_LIGHT, camera.position, glm::vec3(1, 1, 1), glm::vec3(.1, .1, .1)));
+        hzgl::Light(hzgl::LightType::HZGL_POINT_LIGHT, glm::vec3(0.0f, 1.0f, 2.0f)));
 
-    materials.push_back(
-        hzgl::Material(hzgl::MaterialType::HZGL_PHONG_MATERIAL, glm::vec3(0.54f, 0.54f, 0.86f), glm::vec3(0.54f, 0.54f, 0.86f), glm::vec3(0.2f, 0.2f, 0.2f)));
+    materials.push_back(hzgl::Material(hzgl::MaterialType::HZGL_PHONG_MATERIAL));
+    materials.push_back(hzgl::Material(hzgl::MaterialType::HZGL_PBR_MATERIAL));
 
     glViewport(0, 0, static_cast<int>(0.75f * width), height);
     glClearColor(0.98f, 0.98f, 0.98f, 1.0f);
@@ -108,7 +113,22 @@ static void display(void)
             if (programNames[pIndex] == "Blinn-Phong Shading")
             {
                 guiControl.RenderLightingConfigWidget(lights, false);
-                guiControl.RenderMaterialConfigWidget(materials, false);
+
+                if (ImGui::TreeNodeEx("Material Properties", ImGuiTreeNodeFlags_DefaultOpen)) 
+                {
+                    guiControl.RenderMaterialWidget(materials[0]);
+                    ImGui::TreePop();
+                }
+            }
+            else if (programNames[pIndex] == "PBR Basic")
+            {
+                guiControl.RenderLightingConfigWidget(lights, false);
+
+                if (ImGui::TreeNodeEx("Material Properties", ImGuiTreeNodeFlags_DefaultOpen)) 
+                {
+                    guiControl.RenderMaterialWidget(materials[1]);
+                    ImGui::TreePop();
+                }
             }
         }
     }
@@ -132,6 +152,12 @@ static void display(void)
     {
         hzgl::SetupLight(program, lights[0], "uLight");
         hzgl::SetupMaterial(program, materials[0], "uMaterial");
+        glUniform3fv(glGetUniformLocation(program, "uEyePosition"), 1, &camera.position[0]);
+    }
+    else if (programNames[pIndex] == "PBR Basic")
+    {
+        hzgl::SetupLight(program, lights[0], "uLight");
+        hzgl::SetupMaterial(program, materials[1], "uMaterial");
         glUniform3fv(glGetUniformLocation(program, "uEyePosition"), 1, &camera.position[0]);
     }
 
