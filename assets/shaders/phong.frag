@@ -32,9 +32,7 @@ struct MaterialProperties
     float shininess;
 };
 
-uniform int uShininess;
 uniform vec3 uEyePosition; 
-uniform vec3 uObjectColor;
 uniform LightProperties uLight;
 uniform MaterialProperties uMaterial;
 
