@@ -16,7 +16,7 @@ Before you start, make sure you have the following things:
 To run the program yourself, type the following commands
 ```bash
 git clone --recursive https://github.com/iamzhaihy/hzgl-mesh-viewer.git
-cd hzgl-obj-viewer
+cd hzgl-mesh-viewer
 mkdir build && cd build
 cmake ..
 cmake --build .
@@ -123,17 +123,17 @@ Here is my plan for the future improvement
 - More rendering methods
   - Bump, Normal, and Parallax mapping 
   - Physically Based Rendering
+    - [x] Simple model with uniform metallic, roughness, and ao value
 - Improve mesh loading code
-  - Handle OBJ files with more than 1 shape
-  - Handle OBJ files with smoothing groups
-  - Handle OBJ files with missing info (missing normals, TBN, etc.)
-  - A better way to determine texture types (OBJ was made before PBR and 3D artists are not consistent)
+  - [x] Handle OBJ files with more than 1 shape
+  - [ ] Handle OBJ files with smoothing groups
+  - [ ] Handle OBJ files with missing info (missing normals, TBN, etc.)
+  - [ ] A better way to determine texture types (OBJ was made before PBR and 3D artists are not consistent)
 - Improve interactive UI
-  - Load OBJ file from a dropdown file menu
-  - Add a simple editor that recompiles shaders after the user saves changes
+  - [ ] Load OBJ file from a dropdown file menu
+  - [ ] Add a simple editor that recompiles shaders after the user saves changes
 - Improve helper functions
   - Make `hzgl` a standalone library
-    - Make it easier to incorporate
   - More functionality in `FileSystem.hpp`
-    - Add fallback options if C++ 17 is not supported
-  -  Support more file formats (add [tinygltf](https://github.com/syoyo/tinygltf) or switch to [ASSIMP](https://github.com/assimp/assimp))
+    - [x] Add fallback options if C++ 17 is not supported
+  - Support more file formats (add [tinygltf](https://github.com/syoyo/tinygltf) or switch to [ASSIMP](https://github.com/assimp/assimp))
