@@ -16,6 +16,7 @@ namespace hzgl {
 
         void Start();
         double End();
+        double Now();
         double Tick();
     };
 } // namespace hzgl

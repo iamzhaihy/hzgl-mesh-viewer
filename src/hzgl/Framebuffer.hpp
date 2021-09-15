@@ -14,6 +14,20 @@ namespace hzgl
         GLuint id;
     } AttachedImage;
 
-    GLuint CreateFBO(int width, int height);
-    GLuint CreateFBO(int width, int height, const std::vector<AttachedImage>& attachments);
+    typedef struct 
+    {
+        GLuint id;
+        int width;
+        int height;
+        int num_attachment;
+        int num_color_attachment;
+        int num_depth_attachment;
+        int num_stencil_attachment;
+        std::vector<GLuint> color_attachment;
+        GLuint depth_attachment;
+        GLuint stencil_attachment;
+    } FrameBufferInfo;
+
+    GLuint CreateFBO(int width, int height, FrameBufferInfo* fbInfo = nullptr);
+    GLuint CreateFBO(int width, int height, const std::vector<AttachedImage>& attachments, FrameBufferInfo* fbInfo = nullptr);
 } // namespace hzgl

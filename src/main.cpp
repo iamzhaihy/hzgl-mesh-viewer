@@ -144,22 +144,22 @@ static void display(void)
     glm::mat4 Projection = camera.GetProjMatrix();
     glm::mat4 Normal = glm::transpose(glm::inverse(Model));
 
-    glUniformMatrix4fv(glGetUniformLocation(program, "Model"), 1, GL_FALSE, &Model[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(program, "View"), 1, GL_FALSE, &View[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(program, "Projection"), 1, GL_FALSE, &Projection[0][0]);
-    glUniformMatrix4fv(glGetUniformLocation(program, "Normal"), 1, GL_FALSE, &Normal[0][0]);
+    hzgl::SetMatrixv(program, "Model", 4, &Model[0][0]);
+    hzgl::SetMatrixv(program, "View", 4, &View[0][0]);
+    hzgl::SetMatrixv(program, "Projection", 4, &Projection[0][0]);
+    hzgl::SetMatrixv(program, "Normal", 4, &Normal[0][0]);
 
     if (programNames[pIndex] == "Blinn-Phong Shading")
     {
         hzgl::SetupLight(program, lights[0], "uLight");
         hzgl::SetupMaterial(program, materials[0], "uMaterial");
-        glUniform3fv(glGetUniformLocation(program, "uEyePosition"), 1, &camera.position[0]);
+        hzgl::SetFloatv(program, "uEyePosition", 3, &camera.position[0]);
     }
     else if (programNames[pIndex] == "PBR Basic")
     {
         hzgl::SetupLight(program, lights[0], "uLight");
         hzgl::SetupMaterial(program, materials[1], "uMaterial");
-        glUniform3fv(glGetUniformLocation(program, "uEyePosition"), 1, &camera.position[0]);
+        hzgl::SetFloatv(program, "uEyePosition", 3, &camera.position[0]);
     }
 
     glViewport(0, 0, static_cast<int>(0.75f * SCR_WIDTH), SCR_HEIGHT);

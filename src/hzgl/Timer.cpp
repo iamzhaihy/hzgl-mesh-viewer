@@ -25,6 +25,15 @@ double hzgl::SimpleTimer::End()
     return elapsedSeconds.count();
 }
 
+double hzgl::SimpleTimer::Now()
+{
+    // calculate elapsed time (in seconds)
+    std::chrono::time_point timeEnd = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsedSeconds = timeEnd - _timeStart;
+
+    return elapsedSeconds.count();
+}
+
 double hzgl::SimpleTimer::Tick()
 {
     std::chrono::time_point timeNow = std::chrono::high_resolution_clock::now();
