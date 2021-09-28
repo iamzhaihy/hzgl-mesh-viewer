@@ -28,6 +28,7 @@ hzgl::ImGuiControl guiControl;
 hzgl::ResourceManager resources;
 std::vector<hzgl::Light> lights;
 std::vector<hzgl::Material> materials;
+std::vector<hzgl::ProgramInfo> programs;
 std::vector<hzgl::RenderObject> objects;
 hzgl::Camera camera(glm::vec3(0, 0, 3), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), 45.0f,
     static_cast<float>(0.75f * SCR_WIDTH) / static_cast<float>(SCR_HEIGHT));
@@ -59,6 +60,9 @@ static void init(void)
         {GL_FRAGMENT_SHADER, "../assets/shaders/pbr_basic.frag"},
         }, "PBR Basic");
 
+    for (const auto &pName : resources.GetLoadedShaderProgramNames())
+        programs.push_back(resources.GetProgramInfo(pName));
+
     guiControl.Init(window, "#version 410");
 
     int width, height;
@@ -83,8 +87,11 @@ static void init(void)
 
 static void display(void)
 {
-    static int mIndex = 0;
-    static int pIndex = 0;
+    static int lIndex = 0; // light
+    static int mIndex = 0; // material
+    static int oIndex = 0; // render object
+    static int pIndex = 0; // shader program
+
     static float rotation = 0.0f;
 
     deltaTime = static_cast<float>(timer.Tick());
@@ -100,42 +107,23 @@ static void display(void)
     guiControl.BeginFrame(true);
     {	
         guiControl.RenderCameraWidget(camera);
-
-        if (ImGui::CollapsingHeader("Assets", ImGuiTreeNodeFlags_DefaultOpen)) 
-        {
-            guiControl.RenderListBox("Loaded Meshes", modelNames, &mIndex);
-            guiControl.RenderMeshInfoWidget(objects[mIndex]);
-        }
-
-        if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
-        {
-            guiControl.RenderListBox("Shader Programs", programNames, &pIndex);
+        guiControl.RenderModelConfigWidget(objects, &oIndex);
+        guiControl.RenderShaderProgramConfigWidget(programs, &pIndex);
 
             if (programNames[pIndex] == "Blinn-Phong Shading")
             {
-                guiControl.RenderLightingConfigWidget(lights, false);
-
-                if (ImGui::TreeNodeEx("Material Properties", ImGuiTreeNodeFlags_DefaultOpen)) 
-                {
-                    guiControl.RenderMaterialWidget(materials[0]);
-                    ImGui::TreePop();
-                }
+            guiControl.RenderLightingConfigWidget(lights, &lIndex, hzgl::HZGL_ANY_LIGHT);
+            guiControl.RenderMaterialConfigWidget(materials, &mIndex, hzgl::HZGL_PHONG_MATERIAL);
             }
             else if (programNames[pIndex] == "PBR Basic")
             {
-                guiControl.RenderLightingConfigWidget(lights, false);
-
-                if (ImGui::TreeNodeEx("Material Properties", ImGuiTreeNodeFlags_DefaultOpen)) 
-                {
-                    guiControl.RenderMaterialWidget(materials[1]);
-                    ImGui::TreePop();
-                }
-            }
+            guiControl.RenderLightingConfigWidget(lights, &lIndex, hzgl::HZGL_ANY_LIGHT);
+            guiControl.RenderMaterialConfigWidget(materials, &mIndex, hzgl::HZGL_PBR_MATERIAL);
         }
     }
     guiControl.EndFrame();
 
-    GLuint program = resources.GetProgramID(pIndex);
+    GLuint program = programs[pIndex].id;
 
     glUseProgram(program);
 
@@ -149,23 +137,21 @@ static void display(void)
     hzgl::SetMatrixv(program, "Projection", 4, &Projection[0][0]);
     hzgl::SetMatrixv(program, "Normal", 4, &Normal[0][0]);
 
-    if (programNames[pIndex] == "Blinn-Phong Shading")
+    if (programs[pIndex].name == "Blinn-Phong Shading" 
+     || programs[pIndex].name == "PBR Basic")
     {
-        hzgl::SetupLight(program, lights[0], "uLight");
-        hzgl::SetupMaterial(program, materials[0], "uMaterial");
-        hzgl::SetFloatv(program, "uEyePosition", 3, &camera.position[0]);
-    }
-    else if (programNames[pIndex] == "PBR Basic")
-    {
-        hzgl::SetupLight(program, lights[0], "uLight");
-        hzgl::SetupMaterial(program, materials[1], "uMaterial");
+        int numLights = std::min(10, (int)lights.size());
+        for (int i = 0; i < numLights; i++)
+            hzgl::SetupLightInArray(program, lights[i], "uLight", i);
+
+        hzgl::SetupMaterial(program, materials[mIndex], "uMaterial");
         hzgl::SetFloatv(program, "uEyePosition", 3, &camera.position[0]);
     }
 
     glViewport(0, 0, static_cast<int>(0.75f * SCR_WIDTH), SCR_HEIGHT);
-    for (int i = 0; i < objects[mIndex].num_shapes; i++)
+    for (int i = 0; i < objects[oIndex].num_shapes; i++)
     {
-        const auto& shape = objects[mIndex].shapes[i];
+        const auto &shape = objects[oIndex].shapes[i];
         glBindVertexArray(shape.VAO);
         glDrawArrays(GL_TRIANGLES, 0, shape.num_vertices);
     }

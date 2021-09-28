@@ -10,7 +10,8 @@ namespace hzgl
     enum MaterialType
     {
         HZGL_PHONG_MATERIAL,
-        HZGL_PBR_MATERIAL    
+        HZGL_PBR_MATERIAL,
+        HZGL_ANY_MATERIAL
     };
 
     class Material 
@@ -41,6 +42,7 @@ namespace hzgl
         Material(MaterialType t = HZGL_PHONG_MATERIAL);
     };
 
+    std::string MaterialTypeName(MaterialType type);
     void SetupMaterial(GLuint program, const Material &material, std::string uName = "uMaterial");
     void SetupMaterialInArray(GLuint program, const Material &material, std::string uArrayName = "uMaterials", int index = 0);
 } // namespace hzgl

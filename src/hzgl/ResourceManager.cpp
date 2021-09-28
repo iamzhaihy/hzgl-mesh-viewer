@@ -45,6 +45,29 @@ void hzgl::ResourceManager::ReleaseAll()
         glDeleteTextures(1, &pair.second.id);
 }
 
+GLuint hzgl::ResourceManager::LoadTexture(const std::string &filepath, GLenum type)
+{
+    // avoid loading the same texture multiple times
+    if (_textureInfo.find(filepath) != _textureInfo.end())
+        return _textureInfo[filepath].id;
+
+    std::cout << "Loading texture from " << filepath << std::endl;
+
+    if (!Exists(filepath))
+    {
+        HZGL_LOG_ERROR("File does not exist.")
+        return 0;
+    }
+
+    TextureInfo texInfo;
+    TextureFromFile(filepath, type, &texInfo);
+
+    _loadedTextures.push_back(filepath);
+    _textureInfo[filepath] = texInfo;
+
+    return texInfo.id;
+}
+
 GLuint hzgl::ResourceManager::LoadShader(const std::string &filepath, GLenum shaderType)
 {
     // avoid loading the same shader multiple times
@@ -279,6 +302,30 @@ GLuint hzgl::ResourceManager::GetProgramID(const std::string& name)
     return _programInfo[name].id;
 }
 
+const hzgl::ProgramInfo& hzgl::ResourceManager::GetProgramInfo(int index)
+{
+    if (index < 0 || index >= _loadedPrograms.size())
+    {
+        HZGL_LOG_ERROR("Invalid index.")
+        return GetProgramInfo(0);
+    }
+
+    std::string name = _loadedPrograms[index];
+
+    return GetProgramInfo(name);
+}
+
+const hzgl::ProgramInfo& hzgl::ResourceManager::GetProgramInfo(const std::string& name)
+{
+    if (_programInfo.find(name) == _programInfo.end())
+    {
+        HZGL_LOG_ERROR("Invalid name.")
+        return GetProgramInfo(0);
+    }
+
+    return _programInfo[name];
+}
+
 GLuint hzgl::ResourceManager::GetTextureID(int index)
 {
     if (index < 0 || index >= _loadedTextures.size())
@@ -314,6 +361,7 @@ int hzgl::ResourceManager::GetTextureWidth(int index){
 
     return GetTextureWidth(name);
 }
+
 int hzgl::ResourceManager::GetTextureWidth(const std::string& name)
 {
     if (_textureInfo.find(name) == _textureInfo.end())

@@ -85,6 +85,9 @@ namespace hzgl
         GLuint GetProgramID(int index);
         GLuint GetProgramID(const std::string& name);
 
+        const ProgramInfo& GetProgramInfo(int index);
+        const ProgramInfo& GetProgramInfo(const std::string& name);
+
         GLuint GetTextureID(int index);
         GLuint GetTextureID(const std::string& name);
 

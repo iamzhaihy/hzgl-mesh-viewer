@@ -11,7 +11,8 @@ namespace hzgl
     {
         HZGL_SPOT_LIGHT,
         HZGL_POINT_LIGHT,
-        HZGL_DIRECTIONAL_LIGHT
+        HZGL_DIRECTIONAL_LIGHT,
+        HZGL_ANY_LIGHT
     };
 
     class Light
@@ -42,6 +43,7 @@ namespace hzgl
               const glm::vec3 &col = glm::vec3(1, 1, 1), const glm::vec3 &amb = glm::vec3(.1, .1, .1));
     };
 
+    std::string LightTypeName(LightType type);
     void SetupLight(GLuint program, const Light &light, std::string uName = "uLight");
     void SetupLightInArray(GLuint program, const Light &light, std::string uArrayName = "uLights", int index = 0);
 } // namespace hzgl

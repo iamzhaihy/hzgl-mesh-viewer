@@ -23,7 +23,7 @@ namespace hzgl
         void setStyleOptions();
 
         // render control widgets
-        void helpMarker(const char* desc);
+        void helpMarker(const char* desc, bool sameLine = true);
 
     public:
         ImGuiControl();
@@ -37,13 +37,17 @@ namespace hzgl
         // widget to control hzgl types
         void RenderCameraWidget(Camera& camera);
 
-        void RenderMeshInfoWidget(const RenderObject& robj);
+        void RenderModelInfoWidget(const RenderObject& robj);
+        void RenderModelConfigWidget(std::vector<RenderObject>& objects, int* oIndex, bool collapsingHeader = true);
 
-        void RenderLightWidget(Light& light);
-        void RenderLightingConfigWidget(std::vector<Light>& lights, bool collapsingHeader = false);
+        void RenderLightInfoWidget(Light& light);
+        void RenderLightingConfigWidget(std::vector<Light>& lights, int* lIndex, LightType filterType = HZGL_ANY_LIGHT, bool collapsingHeader = true);
 
-        void RenderMaterialWidget(Material& material);
-        void RenderMaterialConfigWidget(std::vector<Material>& materials, bool collapsingHeader = false);
+        void RenderMaterialInfoWidget(Material& material);
+        void RenderMaterialConfigWidget(std::vector<Material>& materials, int* mIndex, MaterialType filterType = HZGL_ANY_MATERIAL, bool collapsingHeader = true);
+        
+        void RenderShaderProgramInfoWidget(ProgramInfo& program);
+        void RenderShaderProgramConfigWidget(std::vector<ProgramInfo>& programs, int* pIndex, bool collapsingHeader = true);
 
         // wrapper around Dear ImGui
         void RenderDragMatrix3(const std::string& label, std::vector<float>& mat);

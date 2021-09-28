@@ -37,75 +37,6 @@ static std::string hzglScreenshotStem()
     return timestamp.str();
 }
 
-static std::string hzglLightType(hzgl::LightType type)
-{
-    std::string lightType;
-
-    switch (type)
-    {
-        case hzgl::LightType::HZGL_SPOT_LIGHT:
-            lightType = "Spot light";
-            break;
-        case hzgl::LightType::HZGL_POINT_LIGHT:
-            lightType = "Point light";
-            break;
-        case hzgl::LightType::HZGL_DIRECTIONAL_LIGHT:
-            lightType = "Directional light";
-            break;
-        default:
-            lightType = "Unknown type";
-            break;
-    }
-
-    return lightType;
-}
-
-static std::string hzglMaterialType(hzgl::MaterialType type)
-{
-    std::string matType;
-
-    switch (type)
-    {
-        case hzgl::MaterialType::HZGL_PHONG_MATERIAL:
-            matType = "Phong Material";
-            break;
-        case hzgl::MaterialType::HZGL_PBR_MATERIAL:
-            matType = "PBR Material";
-            break;
-        default:
-            matType = "Unknown type";
-            break;
-    }
-
-    return matType;
-}
-
-static std::string hzglShadingMode(hzgl::ShadingMode mode)
-{
-    std::string shadingMode;
-
-    switch (mode)
-    {
-        case hzgl::ShadingMode::HZGL_FLAT :
-            shadingMode = "Flat Shading";
-            break;
-        case hzgl::ShadingMode::HZGL_PHONG :
-            shadingMode = "Phong Shading";
-            break;
-        case hzgl::ShadingMode::HZGL_NORMAL_MAPPING:
-            shadingMode = "Normal Mapping";
-            break;
-        case hzgl::ShadingMode::HZGL_PBR:
-            shadingMode = "Physically Based Rendering";
-            break;
-        default:
-            shadingMode = "Unknown type";
-            break;
-    }
-
-    return shadingMode;
-}
-
 void hzgl::TakeScreenshot(int x, int y, int w, int h)
 {
     glReadBuffer(GL_FRONT);
@@ -163,8 +94,10 @@ void hzgl::ImGuiControl::setStyleOptions()
 }
 
 // ref: https://github.com/ocornut/imgui/blob/master/imgui_demo.cpp#L190
-void hzgl::ImGuiControl::helpMarker(const char *desc)
+void hzgl::ImGuiControl::helpMarker(const char *desc, bool sameLine)
 {
+    if (sameLine) ImGui::SameLine();
+
     ImGui::TextDisabled("(?)");
     if (ImGui::IsItemHovered())
     {
@@ -249,65 +182,75 @@ void hzgl::ImGuiControl::EndFrame()
     }
 }
 
-void hzgl::ImGuiControl::RenderLightWidget(Light& light) 
+void hzgl::ImGuiControl::RenderLightInfoWidget(Light& light)
 {
     std::string btnText = light.isEnabled ? "Disable" : "Enable";
-    btnText += " this light";
+    btnText += " this light##light-onoff";
 
-    std::string labelText;
-    // light position / direction
-    if (light.type == HZGL_DIRECTIONAL_LIGHT)
-        labelText = "direction";
-    else
-        labelText = "position";
-
-    labelText += "##light-position-drag3";
-    ImGui::DragFloat3(labelText.c_str(), &light.position[0], 0.01f);
-
-    // light intensities
-    ImGui::Text("%s", "Color/Intensities");
-    ImGui::ColorEdit3("color", &light.color[0]); ImGui::SameLine(); 
-    helpMarker("the diffuse and specular components are usually the same");
-    ImGui::ColorEdit3("ambient", &light.ambient[0]);
-
-    if (light.type == HZGL_SPOT_LIGHT)
+    // hide everything if disabled
+    if (light.isEnabled)
     {
-        ImGui::Text("%s", "Cone (Spot light only)");
+        ImGui::Text("Light type: %s", LightTypeName(light.type).c_str());
+        
+        std::string labelText = (light.type == HZGL_DIRECTIONAL_LIGHT)
+                              ? "direction##light-direction"
+                              : "position##light-position";
 
-        ImGui::Text("%s", "Direction");
-        ImGui::DragFloat3("###light-cone-dir-drag3", &light.coneDirection[0], 0.01f);
+        // light position / direction
+        ImGui::DragFloat3(labelText.c_str(), &light.position[0], 0.01f);
 
-        ImGui::Text("%s", "Exponent");
-        ImGui::DragFloat("###light-cone-exp", &light.spotExponent, 0.1f);
+        // light intensities
+        ImGui::Text("%s", "Color/Intensities");
+        ImGui::ColorEdit3("color##light-color", &light.color[0]);
+        helpMarker("the diffuse and specular components are usually the same");
+        ImGui::ColorEdit3("ambient##light-ambient", &light.ambient[0]);
 
-        ImGui::Text("%s", "Cosine Cutoff");
-        ImGui::DragFloat("###light-cone-cos-cutoff", &light.spotCosCutoff, 0.01f, 0.0f, 1.0f);
+        if (light.type == HZGL_POINT_LIGHT || light.type == HZGL_SPOT_LIGHT) {
+            ImGui::Text("%s", "Attenuation Factors");
+            ImGui::DragFloat("constant##light-kconstant", &light.constantAttenuation, 0.01f);
+            ImGui::DragFloat("linear##light-klinear", &light.linearAttenuation, 0.01f);
+            ImGui::DragFloat("quadratic##light-kquadratic", &light.quadraticAttenuation, 0.01f);
+        }
+        
+        if (light.type == HZGL_SPOT_LIGHT)
+        {
+            ImGui::Text("%s", "Cone (Spot light only)");
+
+            ImGui::Text("%s", "Direction");
+            ImGui::DragFloat3("###light-cone-dir", &light.coneDirection[0], 0.01f);
+
+            ImGui::Text("%s", "Exponent");
+            ImGui::DragFloat("###light-cone-exp", &light.spotExponent, 0.1f);
+
+            ImGui::Text("%s", "Cosine Cutoff");
+            ImGui::DragFloat("###light-cone-cos-cutoff", &light.spotCosCutoff, 0.01f, 0.0f, 1.0f);
+        }
     }
-    else {
-        // TODO: Handle attenuation in shader
-        // ImGui::Text("%s", "Attenuation Factors");
-        // ImGui::DragFloat("constant", &light.constantAttenuation, 0.01f);
-        // ImGui::DragFloat("linear", &light.linearAttenuation, 0.01f);
-        // ImGui::DragFloat("quadratic", &light.quadraticAttenuation, 0.01f);
-    }
 
-    // ImGui::Spacing();
-    // if (ImGui::Button(btnText.c_str(), ImVec2(-1, 0)))
-    //     light.isEnabled = !light.isEnabled;
+    // a button to enable/disable the current light
+    ImGui::Spacing();
+    if (ImGui::Button(btnText.c_str(), ImVec2(-1, 0)))
+        light.isEnabled = !light.isEnabled;
+    ImGui::Spacing();
 }
 
-void hzgl::ImGuiControl::RenderLightingConfigWidget(std::vector<Light>& lights, bool collapsingHeader)
+void hzgl::ImGuiControl::RenderLightingConfigWidget(std::vector<Light>& lights, int* lIndex, LightType filterType, bool collapsingHeader)
 {
     if (lights.empty())
         return;
+    
+    static int selected = 0;
+    bool useFilter = filterType != HZGL_ANY_LIGHT;
 
-    int lIndex = 0;
-
+    std::vector<int> mapping;
     std::vector<std::string> lightNames;
     for (int i = 0; i < lights.size(); i++) 
     {
-        std::string lName = "#" + std::to_string(i+1) + ": " + hzglLightType(lights[i].type);
-        lightNames.push_back(lName);
+        if (!useFilter || lights[i].type == filterType) {
+            std::string lName = "#" + std::to_string(i+1) + ": " + LightTypeName(lights[i].type);
+            lightNames.push_back(lName);
+            mapping.push_back(i);
+        }
     }
 
     ImGuiTreeNodeFlags flags = 0;
@@ -316,48 +259,57 @@ void hzgl::ImGuiControl::RenderLightingConfigWidget(std::vector<Light>& lights, 
     if (collapsingHeader)
         flags |= ImGuiTreeNodeFlags_CollapsingHeader;
 
-    if (ImGui::TreeNodeEx("Lighting Properties", flags))
+    
+    if (ImGui::TreeNodeEx("Lighting", flags))
     {
         if (lightNames.size() > 1)
-            RenderListBox("", lightNames, &lIndex);
+            RenderListBox("Available Lights", lightNames, &selected);
 
-        RenderLightWidget(lights[lIndex]);
+        RenderLightInfoWidget(lights[mapping[selected]]);
+        *lIndex = mapping[selected];
 
         if (!collapsingHeader)
             ImGui::TreePop();
     }
 } 
 
-void hzgl::ImGuiControl::RenderMaterialWidget(Material& material)
+void hzgl::ImGuiControl::RenderMaterialInfoWidget(Material& material)
 {
+    ImGui::Text("Material type: %s", MaterialTypeName(material.type).c_str());
+    
     if (material.type == MaterialType::HZGL_PHONG_MATERIAL)
     {
-        ImGui::ColorEdit3("ambient", &material.ambient[0]);
-        ImGui::ColorEdit3("diffuse", &material.diffuse[0]);
-        ImGui::ColorEdit3("specular", &material.specular[0]);
-        ImGui::DragFloat("shininess", &material.shininess, 0.1f, 2.0f, 3200.0f, "%.1f");
+        ImGui::ColorEdit3("ambient##mat-phong", &material.ambient[0]);
+        ImGui::ColorEdit3("diffuse##mat-phong", &material.diffuse[0]);
+        ImGui::ColorEdit3("specular##mat-phong", &material.specular[0]);
+        ImGui::DragFloat("shininess##mat-phong", &material.shininess, 0.1f, 2.0f, 3200.0f, "%.1f");
     }
     else if (material.type == MaterialType::HZGL_PBR_MATERIAL)
     {
-        ImGui::ColorEdit3("albedo", &material.albedo[0]);
-        ImGui::DragFloat("metallic", &material.metallic, 0.01f, 0.0f, 1.0f, "%.2f");
-        ImGui::DragFloat("roughness", &material.roughness, 0.01f, 0.0f, 1.0f, "%.2f");
-        ImGui::DragFloat("ao", &material.ao, 0.01f, 0.0f, 1.0f, "%.2f");
+        ImGui::ColorEdit3("albedo##mat-pbr", &material.albedo[0]);
+        ImGui::DragFloat("metallic##mat-pbr", &material.metallic, 0.01f, 0.0f, 1.0f, "%.2f");
+        ImGui::DragFloat("roughness##mat-pbr", &material.roughness, 0.01f, 0.0f, 1.0f, "%.2f");
+        ImGui::DragFloat("ao##mat-pbr", &material.ao, 0.01f, 0.0f, 1.0f, "%.2f");
     }
 }
 
-void hzgl::ImGuiControl::RenderMaterialConfigWidget(std::vector<Material>& materials, bool collapsingHeader)
+void hzgl::ImGuiControl::RenderMaterialConfigWidget(std::vector<Material>& materials, int* mIndex, MaterialType filterType, bool collapsingHeader)
 {
     if (materials.empty())
         return;
 
-    int mIndex = 0;
+    static int selected = 0;
+    bool useFilter = filterType != HZGL_ANY_MATERIAL;
 
+    std::vector<int> mapping;
     std::vector<std::string> materialNames;
     for (int i = 0; i < materials.size(); i++) 
     {
-        std::string mName = "#" + std::to_string(i+1) + ": " + hzglMaterialType(materials[i].type);
-        materialNames.push_back(mName);
+        if (!useFilter || materials[i].type == filterType) {
+            std::string mName = "#" + std::to_string(i+1) + ": " + MaterialTypeName(materials[i].type);
+            materialNames.push_back(mName);
+            mapping.push_back(i);
+        }
     }
 
     ImGuiTreeNodeFlags flags = 0;
@@ -366,13 +318,14 @@ void hzgl::ImGuiControl::RenderMaterialConfigWidget(std::vector<Material>& mater
     if (collapsingHeader)
         flags |= ImGuiTreeNodeFlags_CollapsingHeader;
 
-    if (ImGui::TreeNodeEx("Material Properties", flags))
+    if (ImGui::TreeNodeEx("Materials", flags))
     {
         if (materialNames.size() > 1)
-            RenderListBox("", materialNames, &mIndex);
+            RenderListBox("Available Materials", materialNames, &selected);
 
-        RenderMaterialWidget(materials[mIndex]);
-
+        RenderMaterialInfoWidget(materials[mapping[selected]]);
+        *mIndex = mapping[selected];
+        
         if (!collapsingHeader)
             ImGui::TreePop();
     }
@@ -387,7 +340,6 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera& camera)
     {
         // set camera position ("eye" for glm::lookAt())
         ImGui::Text("Position");
-        ImGui::SameLine();
         helpMarker("\"eye\" for glm::lookAt()");
 
         ImGui::SetNextItemWidth(-1);
@@ -396,7 +348,6 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera& camera)
 
         // set camera target ("center" for glm::lookAt())
         ImGui::Text("Target");
-        ImGui::SameLine();
         helpMarker("\"center\" for glm::lookAt()");
 
         ImGui::SetNextItemWidth(-1);
@@ -405,7 +356,6 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera& camera)
 
         // set camera vertical FoV
         ImGui::Text("Vertical FoV");
-        ImGui::SameLine();
         helpMarker("[0, 180] degrees");
 
         ImGui::SetNextItemWidth(-1);
@@ -413,7 +363,7 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera& camera)
         ImGui::Spacing();
 
         // a button to reset camera properties
-        if (ImGui::Button("Reset Camera Properties", ImVec2(-1, 0)))
+        if (ImGui::Button("Reset Camera Properties##camera-reset", ImVec2(-1, 0)))
         {
             camera.position = glm::vec3(0, 0, 3);
             camera.target = glm::vec3(0, 0, 0);
@@ -424,12 +374,12 @@ void hzgl::ImGuiControl::RenderCameraWidget(Camera& camera)
     }
 }
 
-void hzgl::ImGuiControl::RenderMeshInfoWidget(const RenderObject& robj)
+void hzgl::ImGuiControl::RenderModelInfoWidget(const RenderObject& robj)
 {
     for (int i = 0; i < robj.num_shapes; i++)
     {
         const auto& rshape = robj.shapes[i];
-        std::string label = "Shape " + std::to_string(i+1)
+        std::string label = "Mesh " + std::to_string(i+1)
                           + ": " + rshape.name;
 
         if (ImGui::TreeNodeEx(label.c_str()))
@@ -446,7 +396,6 @@ void hzgl::ImGuiControl::RenderMeshInfoWidget(const RenderObject& robj)
 
             if (rshape.has_textures && ImGui::TreeNodeEx("Textures"))
             {
-                std::cout << "Hello\n";
                 for (const auto & pair : rshape.texture)
                 {
                     if (pair.second == 0)
@@ -464,6 +413,78 @@ void hzgl::ImGuiControl::RenderMeshInfoWidget(const RenderObject& robj)
     ImGui::Spacing();
 }
 
+
+void hzgl::ImGuiControl::RenderModelConfigWidget(std::vector<RenderObject>& objects, int* oIndex, bool collapsingHeader) {
+    if (objects.empty())
+        return;
+
+    static int selected = 0;
+
+    std::vector<std::string> objectPaths;
+    for (int i = 0; i < objects.size(); i++)
+        objectPaths.push_back(objects[i].path);
+
+    ImGuiTreeNodeFlags flags = 0;
+    flags |= ImGuiTreeNodeFlags_DefaultOpen;
+
+    if (collapsingHeader)
+        flags |= ImGuiTreeNodeFlags_CollapsingHeader;
+
+    if (ImGui::TreeNodeEx("Assets", flags))
+    {
+        if (objects.size() > 1)
+            RenderListBox("Available Models", objectPaths, &selected);
+
+        RenderModelInfoWidget(objects[selected]);
+        *oIndex = selected;
+        
+        if (!collapsingHeader)
+            ImGui::TreePop();
+    }
+}
+
+void hzgl::ImGuiControl::RenderShaderProgramInfoWidget(ProgramInfo& program) {
+    ImGui::Text("OpenGL ID: %d", program.id);
+    
+    if (ImGui::TreeNodeEx("Shaders Attached"))
+    {
+        for (const auto& stage : program.stages)
+            ImGui::Text("%s", stage.filepath.c_str());
+        ImGui::TreePop();
+    }
+    
+    ImGui::Spacing();
+}
+
+void hzgl::ImGuiControl::RenderShaderProgramConfigWidget(std::vector<ProgramInfo>& programs, int* pIndex, bool collapsingHeader) {
+    if (programs.empty())
+        return;
+
+    static int selected = 0;
+
+    std::vector<std::string> programNames;
+    for (int i = 0; i < programs.size(); i++)
+        programNames.push_back(programs[i].name);
+
+    ImGuiTreeNodeFlags flags = 0;
+    flags |= ImGuiTreeNodeFlags_DefaultOpen;
+
+    if (collapsingHeader)
+        flags |= ImGuiTreeNodeFlags_CollapsingHeader;
+
+    if (ImGui::TreeNodeEx("Rendering", flags))
+    {
+        if (programs.size() > 1)
+            RenderListBox("Available Programs", programNames, &selected);
+
+        RenderShaderProgramInfoWidget(programs[selected]);
+        *pIndex = selected;
+        
+        if (!collapsingHeader)
+            ImGui::TreePop();
+    }
+}
+
 void hzgl::ImGuiControl::RenderDragMatrix3(const std::string& label, std::vector<float>& mat)
 {
     if (label.empty() || mat.size() != 9)
@@ -472,7 +493,7 @@ void hzgl::ImGuiControl::RenderDragMatrix3(const std::string& label, std::vector
     std::string identifier = "##" + label + "-drag-mat3";
 
     ImGui::Text("%s", label.c_str());
-    ImGui::SameLine(); helpMarker("shwon in row major order");
+    helpMarker("shwon in row major order");
 
     ImGui::PushItemWidth(ImGui::GetContentRegionAvailWidth());
         ImGui::DragFloat3((identifier+"-row1").c_str(), &mat[0], 0.01f, 0.0f, 0.0f, "%.2f");
@@ -497,7 +518,7 @@ void hzgl::ImGuiControl::RenderListBox(const std::string &label, const std::vect
     {
         for (int i = 0; i < options.size(); i++)
         {
-            if (ImGui::Selectable(options[i].c_str(), (selected && *selected == i)))
+            if (ImGui::Selectable((options[i] + identifier).c_str(), (selected && *selected == i)))
             {
                 if (selected != nullptr)
                     *selected = i;

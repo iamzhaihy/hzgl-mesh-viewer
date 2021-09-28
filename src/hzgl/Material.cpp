@@ -29,6 +29,26 @@ static GLuint hzglLoc(GLuint program, const std::string& uName)
     return glGetUniformLocation(program, uName.c_str());
 }
 
+std::string hzgl::MaterialTypeName(MaterialType type)
+{
+    std::string matType;
+
+    switch (type)
+    {
+        case HZGL_PHONG_MATERIAL:
+            matType = "Phong Material";
+            break;
+        case HZGL_PBR_MATERIAL:
+            matType = "PBR Material";
+            break;
+        default:
+            matType = "Unknown type";
+            break;
+    }
+
+    return matType;
+}
+
 void hzgl::SetupMaterial(GLuint program, const Material& material, std::string uName)
 {
     glUseProgram(program);

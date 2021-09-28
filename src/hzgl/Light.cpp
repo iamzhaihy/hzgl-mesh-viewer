@@ -21,6 +21,29 @@ static GLuint hzglLoc(GLuint program, const std::string& uName)
     return glGetUniformLocation(program, uName.c_str());
 }
 
+std::string hzgl::LightTypeName(LightType type)
+{
+    std::string lightType;
+
+    switch (type)
+    {
+        case HZGL_SPOT_LIGHT:
+            lightType = "Spot light";
+            break;
+        case HZGL_POINT_LIGHT:
+            lightType = "Point light";
+            break;
+        case HZGL_DIRECTIONAL_LIGHT:
+            lightType = "Directional light";
+            break;
+        default:
+            lightType = "Unknown type";
+            break;
+    }
+
+    return lightType;
+}
+
 void hzgl::SetupLight(GLuint program, const Light &light, std::string uName)
 {
     glUseProgram(program);
