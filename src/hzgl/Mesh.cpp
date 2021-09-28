@@ -9,10 +9,11 @@
 #include <iostream>
 #include <unordered_map>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
-static std::string hzglTexturePath(const std::string& parentpath, const std::string& filename)
+static std::string hzglTexturePath(const std::string &parentpath, const std::string &filename)
 {
     if (filename.empty())
         return "";
@@ -20,117 +21,173 @@ static std::string hzglTexturePath(const std::string& parentpath, const std::str
     return parentpath + "/" + filename;
 }
 
-static bool hzglHasSmoothingGroup(const tinyobj::shape_t& shape)
+static std::string hzglTextureTypeName(aiTextureType type)
 {
-    for (size_t i = 0; i < shape.mesh.smoothing_group_ids.size(); i++)
-        if (shape.mesh.smoothing_group_ids[i] > 0)
-            return true;
+#define CASE(key, ret)  \
+    case key:           \
+    {                   \
+        typeName = ret; \
+        break;          \
+    }
 
-    return false;
+    std::string typeName;
+
+    switch (type)
+    {
+        CASE(aiTextureType_NONE, "none")
+        CASE(aiTextureType_DIFFUSE, "diffuse")
+        CASE(aiTextureType_SPECULAR, "specular")
+        CASE(aiTextureType_AMBIENT, "ambient")
+        CASE(aiTextureType_EMISSIVE, "emissive")
+        CASE(aiTextureType_HEIGHT, "height")
+        CASE(aiTextureType_NORMALS, "normals")
+        CASE(aiTextureType_SHININESS, "shininess")
+        CASE(aiTextureType_OPACITY, "opacity")
+        CASE(aiTextureType_DISPLACEMENT, "displacement")
+        CASE(aiTextureType_LIGHTMAP, "lightmap")
+        CASE(aiTextureType_REFLECTION, "reflection")
+        CASE(aiTextureType_BASE_COLOR, "base")
+        CASE(aiTextureType_NORMAL_CAMERA, "normal")
+        CASE(aiTextureType_EMISSION_COLOR, "emission")
+        CASE(aiTextureType_METALNESS, "metalness")
+        CASE(aiTextureType_DIFFUSE_ROUGHNESS, "diffuse")
+        CASE(aiTextureType_AMBIENT_OCCLUSION, "ambient")
+        CASE(aiTextureType_SHEEN, "sheen")
+        CASE(aiTextureType_CLEARCOAT, "clearcoat")
+        CASE(aiTextureType_TRANSMISSION, "transmission")
+        CASE(aiTextureType_UNKNOWN, "unknown")
+    default:
+        break;
+    }
+
+#undef CASE
+
+    return typeName;
 }
 
-void hzgl::LoadOBJ(const std::string& filepath, std::vector<ShapeInfo>& loadedShapes)
+static void hzglProcessAiMesh(const aiScene *scene, const aiMesh *mesh, std::vector<hzgl::MeshInfo> &loadedShapes, std::string parentpath = "")
 {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
+    hzgl::MeshInfo meshInfo;
+    meshInfo.name = mesh->mName.C_Str();
+    meshInfo.num_vertices = mesh->mNumVertices;
+    meshInfo.shading_mode = hzgl::HZGL_NORMAL_MAPPING;
 
+    // allocate space for geometry data
+    meshInfo.normals.resize(meshInfo.num_vertices * 3, 0);
+    meshInfo.positions.resize(meshInfo.num_vertices * 3, 0);
+    meshInfo.texcoords.resize(meshInfo.num_vertices * 2, 0);
+    meshInfo.indices.resize(mesh->mNumFaces * 3, 0);
+
+    for (unsigned i = 0; i < mesh->mNumVertices; i++)
+    {
+        // retrieve positions (guaranteed to exist)
+        meshInfo.positions[i * 3 + 0] = mesh->mVertices[i].x;
+        meshInfo.positions[i * 3 + 1] = mesh->mVertices[i].y;
+        meshInfo.positions[i * 3 + 2] = mesh->mVertices[i].z;
+
+        // retrieve vertex normals (if present)
+        if (mesh->HasNormals())
+        {
+            meshInfo.normals[i * 3 + 0] = mesh->mNormals[i].x;
+            meshInfo.normals[i * 3 + 1] = mesh->mNormals[i].y;
+            meshInfo.normals[i * 3 + 2] = mesh->mNormals[i].z;
+        }
+
+        if (mesh->mTextureCoords[0])
+        {
+            meshInfo.texcoords[i * 2 + 0] = mesh->mTextureCoords[0][i].x;
+            meshInfo.texcoords[i * 2 + 1] = mesh->mTextureCoords[0][i].y;
+        }
+    }
+
+    for (unsigned f = 0; f < mesh->mNumFaces; f++)
+    {
+        const auto &face = mesh->mFaces[f];
+
+        meshInfo.indices[f * 3 + 0] = face.mIndices[0];
+        meshInfo.indices[f * 3 + 1] = face.mIndices[1];
+        meshInfo.indices[f * 3 + 2] = face.mIndices[2];
+    }
+
+    const aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+
+    for (unsigned t = 0; t <= 20; t++)
+    {
+        aiTextureType type = (aiTextureType)t;
+        std::string typeName = hzglTextureTypeName(type);
+
+        for (unsigned i = 0; i < material->GetTextureCount(type); i++)
+        {
+            aiString texPath;
+            material->GetTexture(type, i, &texPath);
+
+            std::string key = (i > 0) ? typeName + std::to_string(i) : typeName;
+            meshInfo.texpath[key] = hzglTexturePath(parentpath, texPath.C_Str());
+        }
+    }
+
+    loadedShapes.push_back(meshInfo);
+}
+
+static void hzglProcessAiNode(const aiScene *scene, const aiNode *node, std::vector<hzgl::MeshInfo> &loadedShapes, const aiMatrix4x4 &accTransform = aiMatrix4x4(), std::string parentpath = "")
+{
+    aiMatrix4x4 transform = node->mTransformation * accTransform;
+
+    // process the meshes referred by the current node
+    for (unsigned m = 0; m < node->mNumMeshes; m++)
+    {
+        unsigned mIndex = node->mMeshes[m];
+        hzglProcessAiMesh(scene, scene->mMeshes[mIndex], loadedShapes, parentpath);
+    }
+
+    // recursively process all the children nodes
+    for (unsigned c = 0; c < node->mNumChildren; c++)
+        hzglProcessAiNode(scene, node->mChildren[c], loadedShapes, transform, parentpath);
+}
+
+std::string hzgl::ShadingModeName(ShadingMode mode)
+{
+    std::string shadingMode;
+
+    switch (mode)
+    {
+    case HZGL_FLAT:
+        shadingMode = "Flat Shading";
+        break;
+    case HZGL_PHONG:
+        shadingMode = "Phong Shading";
+        break;
+    case HZGL_NORMAL_MAPPING:
+        shadingMode = "Normal Mapping";
+        break;
+    case HZGL_PBR:
+        shadingMode = "Physically Based Rendering";
+        break;
+    default:
+        shadingMode = "Unknown type";
+        break;
+    }
+
+    return shadingMode;
+}
+
+void hzgl::LoadMeshesFromFile(const std::string &filepath, std::vector<hzgl::MeshInfo> &loadedShapes)
+{
     std::string abspath = GetAbsolutePath(filepath);
     std::string parentpath = GetParentPath(filepath);
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, abspath.c_str(), parentpath.c_str()))
+    Assimp::Importer importer;
+
+    auto flags = aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_GenUVCoords;
+    const aiScene *scene = importer.ReadFile(abspath, flags);
+
+    // If the import failed, report it
+    if (scene == nullptr || !scene->HasMeshes() || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
     {
-        std::cerr << "Failed to load " << filepath << std::endl;
+        std::cerr << importer.GetErrorString() << std::endl;
         return;
     }
 
-    if (!warn.empty())
-        std::cout << "WARN: " << warn << std::endl;
-
-    if (!err.empty())
-        std::cerr << err << std::endl;
-
-    for (unsigned int s = 0; s < shapes.size(); s++)
-    {
-        const auto& shape = shapes[s];
-        size_t vCount = shape.mesh.indices.size();
-
-        if (vCount <= 0)
-            continue;
-
-        ShapeInfo shapeInfo;
-        shapeInfo.name = shape.name;
-        shapeInfo.num_vertices = int(vCount);
-        shapeInfo.positions.resize(vCount * 3, 0);
-        shapeInfo.normals.resize(vCount * 3, 0);
-        shapeInfo.texcoords.resize(vCount * 2, 0);
-
-        for (int i = 0; i < shapeInfo.num_vertices; i++)
-        {
-            const auto& idx = shape.mesh.indices[i];
-
-            if (idx.vertex_index >= 0)
-            {
-                shapeInfo.positions[i * 3 + 0] = attrib.vertices[idx.vertex_index * 3 + 0];
-                shapeInfo.positions[i * 3 + 1] = attrib.vertices[idx.vertex_index * 3 + 1];
-                shapeInfo.positions[i * 3 + 2] = attrib.vertices[idx.vertex_index * 3 + 2];
-            }
-
-            if (idx.normal_index >= 0)
-            {
-                shapeInfo.normals[i * 3 + 0] = attrib.normals[idx.normal_index * 3 + 0];
-                shapeInfo.normals[i * 3 + 1] = attrib.normals[idx.normal_index * 3 + 1];
-                shapeInfo.normals[i * 3 + 2] = attrib.normals[idx.normal_index * 3 + 2];
-            }
-
-            if (idx.texcoord_index >= 0)
-            {
-                shapeInfo.texcoords[i * 2 + 0] = attrib.texcoords[idx.texcoord_index * 2 + 0];
-                shapeInfo.texcoords[i * 2 + 1] = attrib.texcoords[idx.texcoord_index * 2 + 1];
-            }
-        }
-
-        // TEMP: use normal mapping by default
-        shapeInfo.shading_mode = HZGL_NORMAL_MAPPING;
-
-        // Do nothing if no valid material available
-        if (!shape.mesh.material_ids.empty() && !materials.empty())
-        {
-            // One material for the entire shape
-            int matID = shape.mesh.material_ids[0];
-
-            // matID == -1: no material for the shape
-            if (matID < 0)
-                continue;
-
-            const auto& mat = materials[matID];
-
-            shapeInfo.texpath["albedo"] = hzglTexturePath(parentpath, mat.diffuse_texname);
-            shapeInfo.texpath["ambient"] = hzglTexturePath(parentpath, mat.ambient_texname);
-            shapeInfo.texpath["specular"] = hzglTexturePath(parentpath, mat.specular_texname);
-
-            shapeInfo.texpath["normal"] = hzglTexturePath(parentpath, mat.normal_texname);
-            shapeInfo.texpath["bump"] = hzglTexturePath(parentpath, mat.bump_texname);
-            shapeInfo.texpath["displacement"] = hzglTexturePath(parentpath, mat.displacement_texname);
-
-            shapeInfo.texpath["roughness"] = hzglTexturePath(parentpath, mat.roughness_texname);
-            shapeInfo.texpath["metallic"] = hzglTexturePath(parentpath, mat.metallic_texname);
-            shapeInfo.texpath["sheen"] = hzglTexturePath(parentpath, mat.sheen_texname);
-            shapeInfo.texpath["emissive"] = hzglTexturePath(parentpath, mat.emissive_texname);
-
-            shapeInfo.texpath["specular_highlight"] = hzglTexturePath(parentpath, mat.specular_highlight_texname);
-            shapeInfo.texpath["reflection"] = hzglTexturePath(parentpath, mat.reflection_texname);
-
-            // TODO:
-            //   - alpha
-            //   - roughness
-            //   - metallic
-            //   - sheen
-            //   - anisotropy_*
-            //   - clearcoat_*
-        }
-
-        loadedShapes.push_back(shapeInfo);
-    }
+    aiMatrix4x4 accTransform;
+    hzglProcessAiNode(scene, scene->mRootNode, loadedShapes, accTransform, parentpath);
 }

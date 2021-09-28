@@ -39,10 +39,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 static void init(void)
 {
     // load meshes from OBJ files
-    resources.LoadMesh("../assets/models/bunny.obj", objects);
-    resources.LoadMesh("../assets/models/buddha.obj", objects);
-    resources.LoadMesh("../assets/models/dragon.obj", objects);
-    resources.LoadMesh("../assets/models/mori_knob/testObj.obj", objects);
+    resources.LoadModel("../assets/models/bunny.obj", objects);
+    resources.LoadModel("../assets/models/buddha.obj", objects);
+    resources.LoadModel("../assets/models/dragon.obj", objects);
+    resources.LoadModel("../assets/models/mori_knob/testObj.obj", objects);
 
     // prepare the shader programs
     resources.LoadShaderProgram({
@@ -153,7 +153,7 @@ static void display(void)
     {
         const auto &shape = objects[oIndex].shapes[i];
         glBindVertexArray(shape.VAO);
-        glDrawArrays(GL_TRIANGLES, 0, shape.num_vertices);
+        glDrawElements(GL_TRIANGLES, shape.num_indices, GL_UNSIGNED_INT, 0);
     }
 
     glBindVertexArray(0);

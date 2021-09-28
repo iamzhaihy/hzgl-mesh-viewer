@@ -24,11 +24,13 @@ namespace hzgl
         std::vector<float> positions;
         std::vector<float> normals;
         std::vector<float> texcoords;
+        std::vector<unsigned> indices;
 
         // Material
         ShadingMode shading_mode;
         std::unordered_map<std::string, std::string> texpath;
-    } ShapeInfo;
+    } MeshInfo;
 
-    void LoadOBJ(const std::string& filepath, std::vector<ShapeInfo>& meshes);
+    std::string ShadingModeName(ShadingMode mode);
+    void LoadMeshesFromFile(const std::string &filepath, std::vector<MeshInfo> &meshes);
 } // namespace hzgl

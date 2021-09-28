@@ -15,6 +15,7 @@ namespace hzgl
     {
         // Metadata
         std::string name;
+        int num_indices = 0;
         int num_vertices = 0;
         bool has_normals = false;
         bool has_texcoords = false;
@@ -22,6 +23,7 @@ namespace hzgl
 
         // OpenGL related
         GLuint VAO = 0;
+        GLuint EBO = 0;
         ShadingMode shading_mode;
         std::unordered_map<std::string, GLuint> texture;
     } RenderShape;
@@ -72,10 +74,10 @@ namespace hzgl
         void ReleaseAll();
 
         // loading assets from files
-        void LoadMesh(const std::string& filepath, std::vector<RenderObject>& objects);
         GLuint LoadTexture(const std::string& filepath, GLenum type);
         GLuint LoadShader(const std::string& filepath, GLenum shaderType);
         GLuint LoadShaderProgram(std::vector<ShaderStage> shaders, const char* name = nullptr);
+        void LoadModel(const std::string& filepath, std::vector<RenderObject>& objects, const char* name = nullptr, bool duplicateAllowed = false);
 
         // public getters
         std::vector<std::string> GetLoadedMeshesNames();

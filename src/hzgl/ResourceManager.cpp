@@ -136,30 +136,7 @@ GLuint hzgl::ResourceManager::LoadShaderProgram(std::vector<ShaderStage> stages,
     return progInfo.id;
 }
 
-GLuint hzgl::ResourceManager::LoadTexture(const std::string &filepath, GLenum type)
-{
-    // avoid loading the same texture multiple times
-    if (_textureInfo.find(filepath) != _textureInfo.end())
-        return _textureInfo[filepath].id;
-
-    std::cout << "Loading texture from " << filepath << std::endl;
-
-    if (!Exists(filepath))
-    {
-        HZGL_LOG_ERROR("File does not exist.")
-        return 0;
-    }
-
-    TextureInfo texInfo;
-    TextureFromFile(filepath, type, &texInfo);
-
-    _loadedTextures.push_back(filepath);
-    _textureInfo[filepath] = texInfo;
-
-    return texInfo.id;
-}
-
-void hzgl::ResourceManager::LoadMesh(const std::string &filepath, std::vector<RenderObject> &objects)
+void hzgl::ResourceManager::LoadModel(const std::string &filepath, std::vector<RenderObject> &objects, const char* name, bool duplicateAllowed)
 {
     enum Buffer_IDs
     {
@@ -177,20 +154,21 @@ void hzgl::ResourceManager::LoadMesh(const std::string &filepath, std::vector<Re
         NumAttribs
     };
 
-    if (_renderObjects.find(filepath) != _renderObjects.end())
+    if (!duplicateAllowed && _renderObjects.find(filepath) != _renderObjects.end())
         return;
 
-    std::cout << "Loading mesh from " << filepath << std::endl;
+    std::cout << "Loading meshes from " << filepath << std::endl;
 
-    std::vector<ShapeInfo> shapes;
+    std::vector<MeshInfo> shapes;
 
-    LoadOBJ(filepath, shapes);
+    LoadMeshesFromFile(filepath, shapes);
 
     RenderObject renderObject;
     for (const auto &shape : shapes)
     {
         RenderShape renderShape;
         renderShape.name = shape.name;
+        renderShape.num_indices = shape.indices.size();
         renderShape.num_vertices = shape.num_vertices;
         renderShape.shading_mode = shape.shading_mode;
         renderShape.has_normals = shape.normals.size() > 0;
@@ -227,6 +205,10 @@ void hzgl::ResourceManager::LoadMesh(const std::string &filepath, std::vector<Re
         glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0, (void *)(0));
         glEnableVertexAttribArray(vTexCoord);
 
+        glGenBuffers(1, &renderShape.EBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderShape.EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * shape.indices.size(), shape.indices.data(), GL_STATIC_DRAW);
+
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -260,7 +242,7 @@ void hzgl::ResourceManager::LoadMesh(const std::string &filepath, std::vector<Re
     objects.push_back(renderObject);
 
     _loadedMeshes.push_back(filepath);
-    _renderObjects[filepath] = renderObject;
+    _renderObjects[(name ? std::string(name) : filepath)] = renderObject;
 }
 
 std::vector<std::string> hzgl::ResourceManager::GetLoadedMeshesNames()
