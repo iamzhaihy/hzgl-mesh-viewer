@@ -31,9 +31,6 @@ list(APPEND INCLUDE_DIRS "${EXTERN_LIBRARY_DIR}/glm")
 # Include STB for loading images
 list(APPEND INCLUDE_DIRS "${EXTERN_LIBRARY_DIR}/stb")
 
-# Include tinyobjloader for loading meshes
-list(APPEND INCLUDE_DIRS "${EXTERN_LIBRARY_DIR}/tinyobjloader")
-
 # Compile GLFW3 statically
 option(GLFW_BUILD_DOCS OFF)
 option(GLFW_BUILD_TESTS OFF)
@@ -46,6 +43,16 @@ list(APPEND LIBRARIES "glfw")
 # Include GLAD to load modern OpenGL
 add_subdirectory("${EXTERN_LIBRARY_DIR}/glad" "glad")
 list(APPEND LIBRARIES "glad")
+
+# Include ASSIMP to load more 3D model formats
+add_subdirectory("${EXTERN_LIBRARY_DIR}/assimp" "assimp")
+option(ASSIMP_NO_EXPORT ON)
+option(ASSIMP_INSTALL_PDB OFF)
+option(ASSIMP_BUILD_TESTS OFF)
+option(ASSIMP_BUILD_ASSIMP_TOOLS OFF)
+option(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
+list(APPEND INCLUDE_DIRS "${EXTERN_LIBRARY_DIR}/assimp/include")
+list(APPEND LIBRARIES "assimp")
 
 # Include Dear ImGui for interactive control
 add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD)
