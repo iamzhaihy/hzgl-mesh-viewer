@@ -6,14 +6,14 @@ hzgl::Light::Light(LightType t, const glm::vec3 &pos, const glm::vec3 &col, cons
     isEnabled = true;
 
     // for spot light
-    coneDirection = glm::vec3(0, -1, 0);
-    spotExponent = 1;
-    spotCosCutoff = 1;
+    coneDirection = glm::vec3(0.0f, -1.0f, 0.0f);
+    spotExponent = 1.0f;
+    spotCosCutoff = 0.866f; // ~ cos(15 deg)
 
     // for local lights
-    constantAttenuation = 1;
-    linearAttenuation = 1;
-    quadraticAttenuation = 1;
+    constantAttenuation = 1.0f;
+    linearAttenuation = 0.35f;
+    quadraticAttenuation = 0.44f;
 }
 
 static GLuint hzglLoc(GLuint program, const std::string& uName)
@@ -46,11 +46,10 @@ std::string hzgl::LightTypeName(LightType type)
 
 void hzgl::SetupLight(GLuint program, const Light &light, std::string uName)
 {
-    glUseProgram(program);
-
     // type of the light
     glUniform1i(hzglLoc(program, uName + ".isEnabled"), (light.isEnabled ? 1 : 0));
     glUniform1i(hzglLoc(program, uName + ".isLocal"), (light.type == HZGL_DIRECTIONAL_LIGHT ? 0 : 1));
+    glUniform1i(hzglLoc(program, uName + ".isSpot"), (light.type == HZGL_SPOT_LIGHT ? 1 : 0));
 
     // position/direction
     glUniform3fv(hzglLoc(program, uName + ".position"), 1, &light.position[0]);

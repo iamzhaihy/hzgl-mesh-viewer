@@ -40,7 +40,7 @@ namespace hzgl
         float quadraticAttenuation;
 
         Light(LightType t = HZGL_POINT_LIGHT, const glm::vec3 &pos = glm::vec3(0, 1, 0),
-              const glm::vec3 &col = glm::vec3(1, 1, 1), const glm::vec3 &amb = glm::vec3(.1, .1, .1));
+              const glm::vec3 &col = glm::vec3(1.0f), const glm::vec3 &amb = glm::vec3(0.2f));
     };
 
     std::string LightTypeName(LightType type);

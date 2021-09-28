@@ -70,7 +70,13 @@ static void init(void)
     framebuffer_size_callback(window, width, height);
 
     lights.push_back(
-        hzgl::Light(hzgl::LightType::HZGL_POINT_LIGHT, glm::vec3(0.0f, 1.0f, 2.0f)));
+        hzgl::Light(hzgl::HZGL_POINT_LIGHT, glm::vec3(0.0f, 0.0f, 3.0f)));
+
+    lights.push_back(
+        hzgl::Light(hzgl::HZGL_POINT_LIGHT, glm::vec3(2.0f, 2.0f, 2.0f)));
+
+    lights.push_back(
+        hzgl::Light(hzgl::HZGL_DIRECTIONAL_LIGHT, glm::vec3(0.0f, -1.0f, -2.0f), glm::vec3(0.5f)));
 
     materials.push_back(hzgl::Material(hzgl::MaterialType::HZGL_PHONG_MATERIAL));
     materials.push_back(hzgl::Material(hzgl::MaterialType::HZGL_PBR_MATERIAL));
