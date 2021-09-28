@@ -15,6 +15,12 @@ foreach(CONFIG ${CMAKE_CONFIGURATION_TYPES})
     set("CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONFIG}" "${CMAKE_BINARY_DIR}")
 endforeach(CONFIG CMAKE_CONFIGURATION_TYPES)
 
+if (APPLE)
+    set(other_flags "${other_flags} -frtti -fvisibility-inlines-hidden")
+    set(other_flags "${other_flags} -fvisibility=hidden")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${other_flags}")
+endif(APPLE)
+
 # Add src folder to the include directories
 set(INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
