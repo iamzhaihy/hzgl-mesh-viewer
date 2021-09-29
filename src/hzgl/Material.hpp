@@ -43,6 +43,7 @@ namespace hzgl
     };
 
     std::string MaterialTypeName(MaterialType type);
+    Material CreatesSampleMaterial(MaterialType type, const std::string &name);
     void SetupMaterial(GLuint program, const Material &material, std::string uName = "uMaterial");
     void SetupMaterialInArray(GLuint program, const Material &material, std::string uArrayName = "uMaterials", int index = 0);
 } // namespace hzgl

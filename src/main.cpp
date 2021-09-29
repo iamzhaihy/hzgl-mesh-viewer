@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <cmath>
 #include <iostream>
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -78,7 +79,9 @@ static void init(void)
     lights.push_back(
         hzgl::Light(hzgl::HZGL_DIRECTIONAL_LIGHT, glm::vec3(0.0f, -1.0f, -2.0f), glm::vec3(0.5f)));
 
-    materials.push_back(hzgl::Material(hzgl::MaterialType::HZGL_PHONG_MATERIAL));
+    materials.push_back(hzgl::CreatesSampleMaterial(hzgl::HZGL_PHONG_MATERIAL, "turquoise"));
+    materials.push_back(hzgl::CreatesSampleMaterial(hzgl::HZGL_PHONG_MATERIAL, "pearl"));
+    materials.push_back(hzgl::CreatesSampleMaterial(hzgl::HZGL_PHONG_MATERIAL, "bronze"));
     materials.push_back(hzgl::Material(hzgl::MaterialType::HZGL_PBR_MATERIAL));
 
     glClearColor(0.98f, 0.98f, 0.98f, 1.0f);
