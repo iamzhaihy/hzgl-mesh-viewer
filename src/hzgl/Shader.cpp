@@ -1,20 +1,11 @@
 #include "Shader.hpp"
 
+#include <cassert>
 #include <sstream>
 #include <fstream>
 #include <iostream>
 
 #include <glad/glad.h>
-
-static bool hzglInRange(int x, int lo, int hi)
-{
-    return (x >= lo) && (x <= hi);
-}
-
-static bool hzglCheckUniform(GLuint programID, const char* uName)
-{
-    return glGetUniformLocation(programID, uName) != -1;
-}
 
 static std::string readFile(const std::string& filepath)
 {
@@ -110,24 +101,16 @@ void hzgl::SetSampler(GLuint programID, const char* uName, GLuint texID, int uni
         prevProgramID = programID;
     }
 
-    if (!hzglCheckUniform(programID, uName)) {
-        std::cerr << "Error: uniform " << uName << " does not exist." << std::endl;
-        return;
-    }
+    GLint loc = glGetUniformLocation(programID, uName);
+    assert(loc != -1 && unit >= 0);
 
     glActiveTexture(GL_TEXTURE0 + unit);
     glBindTexture(GL_TEXTURE_2D, texID);
-    glUniform1i(glGetUniformLocation(programID, uName), unit);
+    glUniform1i(loc, unit);
 }
 
 void hzgl::SetIntegerv(GLuint programID, const char* uName, int count, int* data) 
 {
-    if (count < 1)
-    {
-        std::cerr << "Error: invalid argument" << std::endl;
-        return;
-    }
-
     static GLuint prevProgramID = 0;
 
     if (prevProgramID != programID) 
@@ -136,22 +119,30 @@ void hzgl::SetIntegerv(GLuint programID, const char* uName, int count, int* data
         prevProgramID = programID;
     }
 
-    if (!hzglCheckUniform(programID, uName)) {
-        std::cerr << "Error: uniform " << uName << " does not exist." << std::endl;
-        return;
-    }
+    GLint loc = glGetUniformLocation(programID, uName);
+    assert(loc != -1 && 1 <= count && count <= 4);
 
-    glUniform1iv(glGetUniformLocation(programID, uName), count, data);
+    switch (count)
+    {
+        case 1:
+            glUniform1iv(loc, 1, data);
+            break;
+        case 2:
+            glUniform2iv(loc, 1, data);
+            break;
+        case 3:
+            glUniform3iv(loc, 1, data);
+            break;
+        case 4:
+            glUniform4iv(loc, 1, data);
+            break;
+        default:
+            break;
+    }
 }
 
 void hzgl::SetFloatv(GLuint programID, const char* uName, int count, float* data) 
 {
-    if (count < 1)
-    {
-        std::cerr << "Error: invalid argument" << std::endl;
-        return;
-    }
-
     static GLuint prevProgramID = 0;
 
     if (prevProgramID != programID) 
@@ -160,22 +151,30 @@ void hzgl::SetFloatv(GLuint programID, const char* uName, int count, float* data
         prevProgramID = programID;
     }
 
-    if (!hzglCheckUniform(programID, uName)) {
-        std::cerr << "Error: uniform " << uName << " does not exist." << std::endl;
-        return;
-    }
+    GLint loc = glGetUniformLocation(programID, uName);
+    assert(loc != -1 && 1 <= count && count <= 4);
 
-    glUniform1fv(glGetUniformLocation(programID, uName), count, data);
+    switch (count)
+    {
+        case 1:
+            glUniform1fv(loc, 1, data);
+            break;
+        case 2:
+            glUniform2fv(loc, 1, data);
+            break;
+        case 3:
+            glUniform3fv(loc, 1, data);
+            break;
+        case 4:
+            glUniform4fv(loc, 1, data);
+            break;
+        default:
+            break;
+    }
 }
 
 void hzgl::SetMatrixv(GLuint programID, const char* uName, int dimension, float* data) 
 {
-    if (!hzglInRange(dimension, 2, 4))
-    {
-        std::cerr << "Error: invalid argument" << std::endl;
-        return;
-    }
-   
     static GLuint prevProgramID = 0;
 
     if (prevProgramID != programID) 
@@ -184,21 +183,19 @@ void hzgl::SetMatrixv(GLuint programID, const char* uName, int dimension, float*
         prevProgramID = programID;
     }
 
-    if (!hzglCheckUniform(programID, uName)) {
-        std::cerr << "Error: uniform " << uName << " does not exist." << std::endl;
-        return;
-    }
+    GLint loc = glGetUniformLocation(programID, uName);
+    assert(loc != -1 && 2 <= dimension && dimension <= 4);
 
     switch (dimension)
     {
         case 2:
-            glUniformMatrix2fv(glGetUniformLocation(programID, uName), 1, GL_FALSE, data);
+            glUniformMatrix2fv(loc, 1, GL_FALSE, data);
             break;
         case 3:
-            glUniformMatrix3fv(glGetUniformLocation(programID, uName), 1, GL_FALSE, data);
+            glUniformMatrix3fv(loc, 1, GL_FALSE, data);
             break;
         case 4:
-            glUniformMatrix4fv(glGetUniformLocation(programID, uName), 1, GL_FALSE, data);
+            glUniformMatrix4fv(loc, 1, GL_FALSE, data);
             break;
         default:
             break;
@@ -207,12 +204,6 @@ void hzgl::SetMatrixv(GLuint programID, const char* uName, int dimension, float*
 
 void hzgl::SetInteger(GLuint programID, const char* uName, int count, int i1, int i2, int i3, int i4)
 {
-    if (count < 1)
-    {
-        std::cerr << "Error: invalid argument" << std::endl;
-        return;
-    }
-   
     static GLuint prevProgramID = 0;
 
     if (prevProgramID != programID) 
@@ -221,24 +212,22 @@ void hzgl::SetInteger(GLuint programID, const char* uName, int count, int i1, in
         prevProgramID = programID;
     }
 
-    if (!hzglCheckUniform(programID, uName)) {
-        std::cerr << "Error: uniform " << uName << " does not exist." << std::endl;
-        return;
-    }
+    GLint loc = glGetUniformLocation(programID, uName);
+    assert(loc != -1 && 1 <= count && count <= 4);
 
     switch (count)
     {
         case 1:
-            glUniform1i(glGetUniformLocation(programID, uName), i1);
+            glUniform1i(loc, i1);
             break;
         case 2:
-            glUniform2i(glGetUniformLocation(programID, uName), i1, i2);
+            glUniform2i(loc, i1, i2);
             break;
         case 3:
-            glUniform3i(glGetUniformLocation(programID, uName), i1, i2, i3);
+            glUniform3i(loc, i1, i2, i3);
             break;
         case 4:
-            glUniform4i(glGetUniformLocation(programID, uName), i1, i2, i3, i4);
+            glUniform4i(loc, i1, i2, i3, i4);
             break;
         default:
             break;
@@ -247,12 +236,6 @@ void hzgl::SetInteger(GLuint programID, const char* uName, int count, int i1, in
 
 void hzgl::SetFloat(GLuint programID, const char* uName, int count, float f1, float f2, float f3, float f4)
 {
-    if (!hzglInRange(count, 1, 4))
-    {
-        std::cerr << "Error: invalid argument" << std::endl;
-        return;
-    }
-   
     static GLuint prevProgramID = 0;
 
     if (prevProgramID != programID) 
@@ -261,24 +244,22 @@ void hzgl::SetFloat(GLuint programID, const char* uName, int count, float f1, fl
         prevProgramID = programID;
     }
 
-    if (!hzglCheckUniform(programID, uName)) {
-        std::cerr << "Error: uniform " << uName << " does not exist." << std::endl;
-        return;
-    }
+    GLint loc = glGetUniformLocation(programID, uName);
+    assert(loc != -1 && 1 <= count && count <= 4);
 
     switch (count)
     {
         case 1:
-            glUniform1f(glGetUniformLocation(programID, uName), f1);
+            glUniform1f(loc, f1);
             break;
         case 2:
-            glUniform2f(glGetUniformLocation(programID, uName), f1, f2);
+            glUniform2f(loc, f1, f2);
             break;
         case 3:
-            glUniform3f(glGetUniformLocation(programID, uName), f1, f2, f3);
+            glUniform3f(loc, f1, f2, f3);
             break;
         case 4:
-            glUniform4f(glGetUniformLocation(programID, uName), f1, f2, f3, f4);
+            glUniform4f(loc, f1, f2, f3, f4);
             break;
         default:
             break;
