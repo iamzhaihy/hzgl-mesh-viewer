@@ -59,7 +59,7 @@ static void init(void)
     resources.LoadShaderProgram({
         {GL_VERTEX_SHADER, "../assets/shaders/pbr_basic.vert"},
         {GL_FRAGMENT_SHADER, "../assets/shaders/pbr_basic.frag"},
-        }, "PBR Basic");
+        }, "Basic PBR (Analytic lights)");
 
     for (const auto &pName : resources.GetLoadedShaderProgramNames())
         programs.push_back(resources.GetProgramInfo(pName));
@@ -124,7 +124,7 @@ static void display(void)
             guiControl.RenderLightingConfigWidget(lights, &lIndex, hzgl::HZGL_ANY_LIGHT);
             guiControl.RenderMaterialConfigWidget(materials, &mIndex, hzgl::HZGL_PHONG_MATERIAL);
             }
-            else if (programNames[pIndex] == "PBR Basic")
+            else if (programNames[pIndex] == "Basic PBR (Analytic lights)")
             {
             guiControl.RenderLightingConfigWidget(lights, &lIndex, hzgl::HZGL_ANY_LIGHT);
             guiControl.RenderMaterialConfigWidget(materials, &mIndex, hzgl::HZGL_PBR_MATERIAL);
@@ -147,7 +147,7 @@ static void display(void)
     hzgl::SetMatrixv(program, "Normal", 4, &Normal[0][0]);
 
     if (programs[pIndex].name == "Blinn-Phong Shading" 
-     || programs[pIndex].name == "PBR Basic")
+     || programs[pIndex].name == "Basic PBR (Analytic lights)")
     {
         int numLights = std::min(10, (int)lights.size());
         for (int i = 0; i < numLights; i++)
