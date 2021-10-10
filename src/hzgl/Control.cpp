@@ -252,16 +252,21 @@ void hzgl::ImGuiControl::RenderLightingConfigWidget(std::vector<Light>& lights, 
             mapping.push_back(i);
         }
     }
+    
+    if (lightNames.empty())
+        return;
 
     ImGuiTreeNodeFlags flags = 0;
     flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
     if (collapsingHeader)
         flags |= ImGuiTreeNodeFlags_CollapsingHeader;
-
     
     if (ImGui::TreeNodeEx("Lighting", flags))
     {
+        if (selected >= lightNames.size())
+            selected = lightNames.size() - 1;
+
         if (lightNames.size() > 1)
             RenderListBox("Available Lights", lightNames, &selected);
 
@@ -311,6 +316,9 @@ void hzgl::ImGuiControl::RenderMaterialConfigWidget(std::vector<Material>& mater
             mapping.push_back(i);
         }
     }
+    
+    if (materialNames.empty())
+        return;
 
     ImGuiTreeNodeFlags flags = 0;
     flags |= ImGuiTreeNodeFlags_DefaultOpen;
@@ -320,6 +328,9 @@ void hzgl::ImGuiControl::RenderMaterialConfigWidget(std::vector<Material>& mater
 
     if (ImGui::TreeNodeEx("Materials", flags))
     {
+        if (selected >= materialNames.size())
+            selected = materialNames.size() - 1;
+        
         if (materialNames.size() > 1)
             RenderListBox("Available Materials", materialNames, &selected);
 
