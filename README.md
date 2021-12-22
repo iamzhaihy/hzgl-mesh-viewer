@@ -29,8 +29,8 @@ The external libraries are all compiled statically, which means it should work o
 Using the GUI, the user can:
 
 - Tweak camera settings by clicking and dragging the widgets in the "Camera" section
-- Switch between available meshes by clicking on an item in the "Loaded Meshes" list
-- Switch between shader programs by clicking on an item in the "Shader Programs" list
+- Switch between available models by clicking on an item in the "Available Models" list
+- Switch between shader programs by clicking on an item in the "Available Programs" list
   - Tweak additional rendering settings (if available) via the widgets
 
 Several keyboard shortcuts are provided:
@@ -60,16 +60,18 @@ typedef struct
     std::vector<float> positions;
     std::vector<float> normals;
     std::vector<float> texcoords;
+    std::vector<unsigned> indices;
 
     // Material
     ShadingMode shading_mode;
     std::unordered_map<std::string, std::string> texpath;
 } MeshInfo;
 
-void LoadOBJ(const std::string& filepath, std::vector<MeshInfo>& meshes);
+void LoadMeshesFromFile(const std::string &filepath, std::vector<MeshInfo> &meshes);
 ```
 
 ```c++
+// src/hzgl/Shader.hpp
 typedef struct
 {
     GLenum type;
@@ -77,7 +79,7 @@ typedef struct
     GLuint id;
 } ShaderStage;
 
-GLuint CreateShaderProgram(std::vector<ShaderStage> stages);
+GLuint CreateShaderProgram(std::vector<ShaderStage> stages, std::vector<const char*> feedbackVaryings={});
 ```
 
 I also added several helper classes. One of them is `ResourceManager`. It will check to make sure the same file does not get loaded twice. It will also release the resources when it is out of scope. For more detail please check out `/src/hzgl/ResourceManager.hpp`.
@@ -87,7 +89,7 @@ hzgl::ResourceManager resources;
 std::vector<hzgl::RenderObject> objects;
 
 // load meshes from OBJ files
-resources.LoadMesh("../assets/models/bunny.obj", objects);
+resources.LoadModel("../assets/models/bunny.obj", objects);
 
 // load and create shader program from source files
 resources.LoadShaderProgram({
@@ -95,23 +97,25 @@ resources.LoadShaderProgram({
     {GL_FRAGMENT_SHADER, "../assets/shaders/phong.frag"},
     }, "Blinn-Phong Shading");
 ```
+I am also planning to make `hzgl` a standalone library. More on that later.
 
 **Interactive UI for Faster Debugging**
 
 This project incorporated [Dear ImGui](https://github.com/ocornut/imgui) to make debugging easier. The user can tweak the camera properties using the tools in the first section.
 
-![gui camera](./results/gui-camera.gif)
+![gui camera](./results/gui-camera-control.gif)
 
-As mentioned before, it is easy to switch between loaded OBJ files. When developing shaders, this can be very helpful. For example, If the shader works on the first mesh but does not work on the second, then the surface normals of the second mesh might be incorrect.
+As mentioned before, it is easy to switch between loaded OBJ files. When developing shaders, this can be very helpful. For example, If the shader works on the first mesh but does not work on the second, then the surface normal of the second mesh might be incorrect. It also shows useful info (e.g., OpenGL VAO, number of vertices) of the selected model.
 
-![gui mesh select](./results/gui-mesh-select.gif)
+![gui model select](./results/gui-model-select.gif)
 
-It is also easy to switch between shader programs. Depending on the selected shader program, Additional options may pop up. 
+It is also easy to switch between shader programs. Depending on the selected shader program, additional options may pop up. The following GIF shows the options available for Blinn-Phong Shading.
 
-![gui shader select](./results/gui-shader-select.gif)
+![gui rendering phong](./results/gui-rendering-phong.gif)
 
-As shown above, when doing Blinn-Phong Shading, it is helpful to see how the lighting affects the final result.
+As shown above, the user can tweak the lighting properties of the environment and the material properties of the model. The following GIF shows the options for basic PBR shading.
 
+![gui rendering basic pbr](./results/gui-rendering-basic-pbr.gif)
 
 
 ## Future Plans for the Project
@@ -130,10 +134,8 @@ Here is my plan for the future improvement
   - [ ] Handle OBJ files with missing info (missing normals, TBN, etc.)
   - [ ] A better way to determine texture types (OBJ was made before PBR and 3D artists are not consistent)
 - Improve interactive UI
-  - [ ] Load OBJ file from a dropdown file menu
+  - [ ] Load model files from a dropdown file menu
   - [ ] Add a simple editor that recompiles shaders after the user saves changes
 - Improve helper functions
-  - Make `hzgl` a standalone library
-  - More functionality in `FileSystem.hpp`
-    - [x] Add fallback options if C++ 17 is not supported
-  - Support more file formats (add [tinygltf](https://github.com/syoyo/tinygltf) or switch to [ASSIMP](https://github.com/assimp/assimp))
+  - [x] Add fallback options if C++ 17 is not supported
+  - [x] Support more file formats (add [tinygltf](https://github.com/syoyo/tinygltf) or switch to [ASSIMP](https://github.com/assimp/assimp))
